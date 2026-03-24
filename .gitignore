@@ -1,3 +1,6 @@
+# Custom Ignore
+*.ts4script
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
