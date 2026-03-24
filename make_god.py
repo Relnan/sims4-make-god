@@ -6,6 +6,7 @@ import sims4.resources
 from datetime import datetime
 from traits.trait_type import TraitType
 from sims.sim_info_types import Gender
+from protocolbuffers import Consts_pb2
 
 # --- PFAD-FINDUNG ---
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -381,7 +382,7 @@ def cmd_make_god(*args, _connection=None):
             new_funds = min(current_funds + add_f, active_set.get("max_funds", 9999999))
             diff = new_funds - current_funds
             if diff > 0:
-                sims4.commands.execute(f'sims.modify_funds {diff}', _connection)
+                targets[0].household.funds.add(diff, Consts_pb2.TELEMETRY_MONEY_CHEAT, targets[0])
                 _log(f"Haushaltskonto erhoeht um {diff}.")
                 out(f"--- Haushaltskonto um {diff} Simoleons erhoeht ---")
     except: pass
