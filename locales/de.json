@@ -1,0 +1,12 @@
+{
+    "init": "Gott-Modus Initialisierung...",
+    "no_target": "Fehler: Kein Ziel-Sim gefunden.",
+    "skills_max": "Faehigkeiten maximiert.",
+    "traits_added": "Neue Traits ausgeruestet.",
+    "traits_cleaned": "Negative Traits entfernt.",
+    "master_done": "Karriere & Bestreben abgeschlossen.",
+    "harmony_done": "Haushalts-Harmonie auf 100 gesetzt.",
+    "flags_done": "Gender/Orientierungs-Flags gesetzt.",
+    "config_reloaded": "Konfiguration neu geladen!",
+    "funds_added": "Haushaltskonto maximiert."
+}

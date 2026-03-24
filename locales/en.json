@@ -1,0 +1,12 @@
+{
+    "init": "God Mode initializing...",
+    "no_target": "Error: No target Sim found.",
+    "skills_max": "Skills maxed out.",
+    "traits_added": "New traits equipped.",
+    "traits_cleaned": "Negative traits removed.",
+    "master_done": "Career & Aspiration completed.",
+    "harmony_done": "Household harmony set to 100.",
+    "flags_done": "Gender/Orientation flags set.",
+    "config_reloaded": "Configuration reloaded!",
+    "funds_added": "Household funds maxed out."
+}
