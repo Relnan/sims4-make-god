@@ -3,503 +3,401 @@ import json
 import sims4.commands
 import services
 import sims4.resources
-import sims4.hash_util
 from datetime import datetime
-
 from traits.trait_type import TraitType
 from sims.sim_info_types import Gender
 
 # --- PFAD-FINDUNG ---
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 MOD_FOLDER = os.path.dirname(CURRENT_DIR) if CURRENT_DIR.endswith('.ts4script') else CURRENT_DIR
-
 CONFIG_FILE = os.path.join(MOD_FOLDER, 'make_god_config.json')
-TEMPLATE_FILE = os.path.join(MOD_FOLDER, 'make_god_config_template.json')
 LOG_FILE = os.path.join(MOD_FOLDER, 'make_god_debug.txt')
 
-# --- STANDARD-WERTE (FALLBACK & TEMPLATE) ---
+# --- STANDARD-WERTE ---
 DEFAULT_CONFIG = {
     "language": "de",
     "debug_log": True,
-    "auto_profiles": {
-        "option_1": {
-            "playable_male": "0",
-            "playable_female": "0",
-            "npc_male": "1",
-            "npc_female": "1"
-        },
-        "option_2": {
-            "playable_male": "0",
-            "playable_female": "0",
-            "npc_male": "2",
-            "npc_female": "2"
-        },
-        "option_3": {
-            "playable_male": "0",
-            "playable_female": "0",
-            "npc_male": "3",
-            "npc_female": "3"
-        }
+    "occult_motives_map": {
+        "fairy": ["commodity_motive_fairyoccult_emotionalappetite"],
+        "ghost": ["commodity_ghostpowers_stamina"],
+        "human": ["motive_hunger", "motive_energy"]
     },
-    "sets": {
-        "0": {
-            "name": "Default God",
-            "harmony_friendship": 100,
-            "harmony_romance": 100,
-            "harmony_reduce": False,
-            "freeze_occult_motives": True,
-            "satisfaction_points": 11000,
-            "add_funds": 9999999,
-            "max_funds": 9999999,
-            "exclude_all": ["evil", "lazy", "mean", "gloomy", "hotheaded", "jealous", "slob", "clumsy", "snob", "erratic"],
-            "exclude_sex_male": [],
-            "exclude_sex_female": [],
-            "exclude_interest_male": [],
-            "exclude_interest_female": [],
-            "exclude_interest_bi": [],
-            "traits_all": [
-                "trait_Hidden_IsImmortal"
-            ],
-            "traits_sex_male": [],
-            "traits_sex_female": [],
-            "flags_interest_male": ["trait_SexualOrientation_WooHooInterests_Female", "trait_GenderOptions_AttractedTo_Female"],
-            "flags_interest_female": ["trait_SexualOrientation_WooHooInterests_Male", "trait_GenderOptions_AttractedTo_Male"],
-            "flags_interest_bi": ["trait_SexualOrientation_WooHooInterests_Female", "trait_SexualOrientation_WooHooInterests_Male", "trait_GenderOptions_AttractedTo_Female", "trait_GenderOptions_AttractedTo_Male"]
-        }
-    }
-}
-
-LOCALES = {
-    "de": {
-        "init": "Gott-Modus Initialisierung...",
-        "no_target": "Fehler: Kein Ziel-Sim gefunden.",
-        "skills_max": "Faehigkeiten maximiert.",
-        "traits_added": "Traits und Flags ausgeruestet.",
-        "traits_cleaned": "Negative Traits entfernt.",
-        "master_done": "Karriere & Bestreben abgeschlossen.",
-        "harmony_done": "Haushalts-Harmonie hergestellt.",
-        "config_reloaded": "Konfiguration neu geladen!",
-        "funds_added": "Haushaltskonto aktualisiert.",
-        "set_loaded": "Set geladen: "
-    },
-    "en": {
-        "init": "God Mode initializing...",
-        "no_target": "Error: No target Sim found.",
-        "skills_max": "Skills maxed out.",
-        "traits_added": "Traits and Flags equipped.",
-        "traits_cleaned": "Negative traits removed.",
-        "master_done": "Career & Aspiration completed.",
-        "harmony_done": "Household harmony established.",
-        "config_reloaded": "Configuration reloaded!",
-        "funds_added": "Household funds updated.",
-        "set_loaded": "Loaded Set: "
-    }
+    "auto_profiles": { "option_1": { "playable_male": "0", "playable_female": "0", "npc_male": "1", "npc_female": "1" } },
+    "sets": { "0": { "name": "Default", "occult_settings": {} } }
 }
 
 ACTIVE_CONFIG = DEFAULT_CONFIG.copy()
-ACTIVE_LOCALE = LOCALES["de"]
 
-# --- DEBUG LOGGER ---
 def _log(message):
     if ACTIVE_CONFIG.get("debug_log", False):
         try:
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             with open(LOG_FILE, 'a', encoding='utf-8') as f:
-                f.write(f"[{timestamp}] {message}\n")
+                f.write(f"[{datetime.now().strftime('%H:%M:%S')}] {message}\n")
         except: pass
 
-# --- CONFIG MANAGER ---
 def load_config():
-    global ACTIVE_CONFIG, ACTIVE_LOCALE
-    
-    if not os.path.exists(TEMPLATE_FILE):
-        try:
-            with open(TEMPLATE_FILE, 'w', encoding='utf-8') as f: json.dump(DEFAULT_CONFIG, f, indent=4)
-        except: pass
-
+    global ACTIVE_CONFIG
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f: ACTIVE_CONFIG = json.load(f)
         except: ACTIVE_CONFIG = DEFAULT_CONFIG.copy()
-    else:
+
+def _get_occult_type(sim_info):
+    occult_str = "human"
+    if hasattr(sim_info, 'occult_tracker') and sim_info.occult_tracker.has_any_occult_or_part_occult_trait():
         try:
-            with open(CONFIG_FILE, 'w', encoding='utf-8') as f: json.dump(DEFAULT_CONFIG, f, indent=4)
-        except: pass
+            ot = sim_info.occult_tracker.occult_types
+            if ot: occult_str = str(list(ot)[0]).split('.')[-1].lower()
+        except: occult_str = "occult"
+    return occult_str
 
-    lang = ACTIVE_CONFIG.get("language", "en")
-    ACTIVE_LOCALE = LOCALES.get(lang, LOCALES["en"])
-    _log("--- CONFIG GELADEN ---")
-
-def t(key):
-    return ACTIVE_LOCALE.get(key, key)
-
-load_config()
-
-# --- HELPER FUNKTIONEN ---
-def get_target_sim(target_sim_id, _connection):
-    if target_sim_id: return services.sim_info_manager().get(target_sim_id)
-    client = services.client_manager().get(_connection)
-    return client.active_sim.sim_info if client.active_sim else None
-
-def _apply_skills(sim_info, _connection):
-    skill_manager = services.get_instance_manager(sims4.resources.Types.STATISTIC)
-    count = 0
-    for skill_type in tuple(skill_manager.types.values()):
-        if hasattr(skill_type, 'is_skill') and skill_type.is_skill:
-            tracker = sim_info.get_tracker(skill_type)
-            if tracker:
-                try: 
-                    tracker.set_value(skill_type, skill_type.max_value)
-                    count += 1
-                except: pass
-    _log(f"Skills maximiert fuer {sim_info.first_name} ({count} Skills).")
-
-def _apply_traits_and_flags(sim_info, mode, set_id, interest_override, _connection):
-    sets = ACTIVE_CONFIG.get("sets", {})
-    active_set = sets.get(str(set_id), sets.get("0", DEFAULT_CONFIG["sets"]["0"]))
-    trait_manager = services.get_instance_manager(sims4.resources.Types.TRAIT)
-    current_traits = [getattr(t, '__name__', '').lower() for t in sim_info.get_traits()]
-    
-    interest = interest_override
-    if interest not in ['m', 'f', 'bi']:
-        interest = 'm' if sim_info.gender == Gender.MALE else 'f'
-
-    _log(f"Starte Traits fuer {sim_info.first_name} (Mode: {mode}, Set: {set_id}, Interest: {interest})")
-
-    if mode in ['clean', 'remove_bad']:
-        bad_keywords = active_set.get("exclude_all", []).copy()
-        if sim_info.gender == Gender.MALE: bad_keywords.extend(active_set.get("exclude_sex_male", []))
-        elif sim_info.gender == Gender.FEMALE: bad_keywords.extend(active_set.get("exclude_sex_female", []))
-        if interest == 'm': bad_keywords.extend(active_set.get("exclude_interest_male", []))
-        elif interest == 'f': bad_keywords.extend(active_set.get("exclude_interest_female", []))
-        elif interest == 'bi': bad_keywords.extend(active_set.get("exclude_interest_bi", []))
-
-        removed = 0
-        for ct in current_traits:
-            if any(bad in ct for bad in bad_keywords if bad):
-                sims4.commands.execute(f'traits.remove_trait {ct} {sim_info.sim_id}', _connection)
-                removed += 1
-        _log(f"-> {removed} negative Traits entfernt.")
-
-    if mode in ['add_only', 'clean']:
-        dynamic_traits = []
-        gameplay_type = getattr(TraitType, 'GAMEPLAY', 1) 
-        for trait in tuple(trait_manager.types.values()):
-            if getattr(trait, 'trait_type', None) == gameplay_type:
-                t_name = getattr(trait, '__name__', '')
-                if t_name and not any(bad in t_name.lower() for bad in active_set.get("exclude_all", [])):
-                    dynamic_traits.append(t_name)
-        
-        specific_traits = active_set.get("traits_all", []).copy()
-        if sim_info.gender == Gender.MALE: specific_traits.extend(active_set.get("traits_sex_male", []))
-        elif sim_info.gender == Gender.FEMALE: specific_traits.extend(active_set.get("traits_sex_female", []))
-        if interest == 'm': specific_traits.extend(active_set.get("flags_interest_male", []))
-        elif interest == 'f': specific_traits.extend(active_set.get("flags_interest_female", []))
-        elif interest == 'bi': specific_traits.extend(active_set.get("flags_interest_bi", []))
-
-        all_good_traits = set(specific_traits + dynamic_traits)
-        added = 0
-        for t_name in all_good_traits:
-            base_name = t_name.split(':')[-1].lower()
-            if not any(base_name == ct or base_name in ct for ct in current_traits):
-                sims4.commands.execute(f'traits.equip_trait {t_name} {sim_info.sim_id}', _connection)
-                added += 1
-        _log(f"-> {added} neue Traits/Flags hinzugefuegt.")
-
-def _apply_harmony(sim_info, set_id, _connection):
-    stat_manager = services.get_instance_manager(sims4.resources.Types.STATISTIC)
-    client = services.client_manager().get(_connection)
-    
-    f_track = stat_manager.get(16650) # LTR_Friendship_Main
-    r_track = stat_manager.get(16651) # LTR_Romance_Main
-    
-    sets = ACTIVE_CONFIG.get("sets", {})
-    active_set = sets.get(str(set_id), sets.get("0", DEFAULT_CONFIG["sets"]["0"]))
-    f_val = active_set.get("harmony_friendship", 100)
-    r_val = active_set.get("harmony_romance", 100)
-    reduce_allowed = active_set.get("harmony_reduce", False)
-
-    active_household = client.active_sim.household if client and client.active_sim else None
-    
-    if active_household and sim_info not in active_household:
-        target_sims = tuple(active_household)
-    else:
-        target_sims = tuple(sim_info.household)
-
-    count = 0
-    for member in target_sims:
-        if member.sim_id != sim_info.sim_id:
-            try:
-                curr_f = sim_info.relationship_tracker.get_relationship_score(member.sim_id, f_track) if f_track else 0
-                curr_r = sim_info.relationship_tracker.get_relationship_score(member.sim_id, r_track) if r_track else 0
-                
-                if reduce_allowed or f_val > curr_f:
-                    if f_track: sim_info.relationship_tracker.set_relationship_score(member.sim_id, f_val, f_track)
-                if reduce_allowed or r_val > curr_r:
-                    if r_track: sim_info.relationship_tracker.set_relationship_score(member.sim_id, r_val, r_track)
-                count += 1
-            except: pass
-            
-    _log(f"Harmonie fuer {sim_info.first_name} mit {count} Sims aktualisiert (F:{f_val} / R:{r_val} / Reduce:{reduce_allowed}).")
-
-def _apply_occult_motives(sim_info, set_id, _connection):
-    sets = ACTIVE_CONFIG.get("sets", {})
-    active_set = sets.get(str(set_id), sets.get("0", DEFAULT_CONFIG["sets"]["0"]))
-    
-    if not active_set.get("freeze_occult_motives", False):
-        return
-
-    stat_tracker = sim_info.get_tracker(sims4.resources.Types.STATISTIC)
-    if not stat_tracker: return
-    
-    for stat in list(stat_tracker):
-        stat_name = getattr(stat, '__name__', '').lower()
-        if "fairy" in stat_name or "ghost" in stat_name or "ethereal" in stat_name or "vampire" in stat_name or "magic" in stat_name:
-            try:
-                stat_tracker.set_value(stat, stat.max_value)
-                stat.add_decay_rate_modifier(0.0) 
-            except: pass
-            
-    _log(f"Occult Motives fuer {sim_info.first_name} eingefroren.")
-
-def _apply_master(sim_info, _connection):
-    if sim_info.career_tracker:
-        active_careers = tuple(sim_info.career_tracker.careers.values())
-        for career in active_careers:
-            try:
-                for _ in range(15): career.promote()
-                sim_info.career_tracker.remove_career(career.guid64)
-            except: pass
+# --- CORE LOGIK (MIT STATS-TRACKING) ---
+def _apply_skills(sim_info, _connection, stats, out, debug_console):
     try:
-        for _ in range(5): sims4.commands.execute(f'aspirations.complete_current_milestone {sim_info.sim_id}', _connection)
-    except: pass
-    _log(f"Karrieren & Bestreben fuer {sim_info.first_name} gemastert.")
+        skill_manager = services.get_instance_manager(sims4.resources.Types.STATISTIC)
+        if not skill_manager: return
+        count = 0
+        for skill_type in tuple(skill_manager.types.values()):
+            if hasattr(skill_type, 'is_skill') and skill_type.is_skill:
+                tracker = sim_info.get_tracker(skill_type)
+                if tracker:
+                    try: 
+                        tracker.set_value(skill_type, skill_type.max_value)
+                        count += 1
+                    except: pass
+        stats['skills'] = count
+        msg = f"Skills maximiert fuer {sim_info.first_name} ({count} Skills)."
+        _log(msg)
+        if debug_console: out(f"[DEBUG] {msg}")
+    except Exception as e:
+        stats['errors'].append(f"Skills fehlgeschlagen: {e}")
+        _log(f"Fehler bei Skills fuer {sim_info.first_name}: {e}")
 
-# --- BEFEHLE (COMMANDS) ---
-@sims4.commands.Command('reload_god_config', command_type=sims4.commands.CommandType.Live)
-def cmd_reload_config(_connection=None):
-    output = sims4.commands.CheatOutput(_connection)
-    load_config()
-    output(t("config_reloaded"))
+def _apply_master(sim_info, set_id, _connection, stats, out, debug_console):
+    try:
+        active_set = ACTIVE_CONFIG.get("sets", {}).get(str(set_id), {})
+        
+        # 1. Karriere maximieren
+        if sim_info.career_tracker:
+            for career in tuple(sim_info.career_tracker.careers.values()):
+                for _ in range(15):
+                    try: career.promote()
+                    except: pass
+                        
+        # 2. Bestreben abschließen
+        for _ in range(5):
+            try: sims4.commands.execute(f'aspirations.complete_current_milestone {sim_info.sim_id}', _connection)
+            except: pass
+                
+        # 3. Zufriedenheitspunkte vergeben (Zurueck zum bewaehrten Cheat aus dem alten Skript!)
+        points = active_set.get("satisfaction_points", 0)
+        if points > 0:
+            try:
+                sims4.commands.execute(f'sims.give_satisfaction_points {points} {sim_info.sim_id}', _connection)
+            except Exception as e:
+                _log(f"Fehler bei Zufriedenheitspunkten: {e}")
 
-@sims4.commands.Command('skill_god', command_type=sims4.commands.CommandType.Live)
-def cmd_skill_god(target_sim_id:int=None, _connection=None):
-    output = sims4.commands.CheatOutput(_connection)
-    sim_info = get_target_sim(target_sim_id, _connection)
-    if not sim_info: return output(t("no_target"))
-    _apply_skills(sim_info, _connection)
-    output(f"{sim_info.first_name}: {t('skills_max')}")
+        stats['mastered'] = True
+        msg = f"Karrieren, Bestreben & Zufriedenheit ({points}) fuer {sim_info.first_name} gemastert."
+        _log(msg)
+        if debug_console: out(f"[DEBUG] {msg}")
+    except Exception as e:
+        stats['errors'].append(f"Master-Modul fehlgeschlagen: {e}")
+        _log(f"Fehler im Master-Modul fuer {sim_info.first_name}: {e}")
 
-# FEHLER BEHOBEN: target_sim_id ist nun der letzte Parameter, damit "remove_bad" als Mode erkannt wird!
-@sims4.commands.Command('trait_god', command_type=sims4.commands.CommandType.Live)
-def cmd_trait_god(mode:str='add_only', set_id:str='0', interest_override:str='auto', target_sim_id:int=None, _connection=None):
-    output = sims4.commands.CheatOutput(_connection)
-    sim_info = get_target_sim(target_sim_id, _connection)
-    if not sim_info: return output(t("no_target"))
-    
-    _apply_traits_and_flags(sim_info, mode, set_id, interest_override, _connection)
-    set_name = ACTIVE_CONFIG.get("sets", {}).get(str(set_id), {}).get("name", f"Set {set_id}")
-    output(f"{t('set_loaded')}{set_name}")
-    if mode in ['clean', 'remove_bad']: output(f"{sim_info.first_name}: {t('traits_cleaned')}")
-    if mode in ['add_only', 'clean']: output(f"{sim_info.first_name}: {t('traits_added')}")
+def _apply_occult_motives(sim_info, set_id, _connection, stats, out, debug_console):
+    try:
+        sets = ACTIVE_CONFIG.get("sets", {})
+        active_set = sets.get(str(set_id), sets.get("0", {}))
+        
+        occult_type = _get_occult_type(sim_info)
+        occult_prefs = active_set.get("occult_settings", {}).get(occult_type, {})
 
-@sims4.commands.Command('harmony_god', command_type=sims4.commands.CommandType.Live)
-def cmd_harmony_god(set_id:str='0', target_sim_id:int=None, _connection=None):
-    output = sims4.commands.CheatOutput(_connection)
-    sim_info = get_target_sim(target_sim_id, _connection)
-    if not sim_info: return output(t("no_target"))
-    _apply_harmony(sim_info, set_id, _connection)
-    output(f"{sim_info.first_name}: {t('harmony_done')}")
+        if not occult_prefs.get("freeze_motives", False): return
 
-@sims4.commands.Command('master_god', command_type=sims4.commands.CommandType.Live)
-def cmd_master_god(target_sim_id:int=None, _connection=None):
-    output = sims4.commands.CheatOutput(_connection)
-    sim_info = get_target_sim(target_sim_id, _connection)
-    if not sim_info: return output(t("no_target"))
-    _apply_master(sim_info, _connection)
-    output(f"{sim_info.first_name}: {t('master_done')}")
+        motives_map = active_set.get("occult_motives_map", {})
+        targets = motives_map.get(occult_type, [])
+        if not targets: return
 
+        stat_manager = services.get_instance_manager(sims4.resources.Types.STATISTIC)
+        if not stat_manager: return
+        
+        frozen_count = 0
+
+        for stat_type in tuple(stat_manager.types.values()):
+            stat_name = getattr(stat_type, '__name__', '').lower()
+            if stat_name in targets:
+                tracker = sim_info.get_tracker(stat_type)
+                if tracker:
+                    stat_inst = tracker.get_statistic(stat_type)
+                    if stat_inst:
+                        tracker.set_value(stat_type, stat_inst.max_value)
+                        try: stat_inst.add_decay_rate_modifier(0.0)
+                        except: pass
+                        frozen_count += 1
+                
+        if frozen_count > 0:
+            stats['motives'] = frozen_count
+            msg = f"Motive für {sim_info.first_name} ({occult_type}) in Set {set_id} eingefroren: {frozen_count}"
+            _log(msg)
+            if debug_console: out(f"[DEBUG] {msg}")
+    except Exception as e:
+        stats['errors'].append(f"Motive einfrieren fehlgeschlagen: {e}")
+
+def _apply_harmony(sim_info, set_id, _connection, stats, out, debug_console):
+    try:
+        stat_manager = services.get_instance_manager(sims4.resources.Types.STATISTIC)
+        bit_manager = services.get_instance_manager(sims4.resources.Types.RELATIONSHIP_BIT)
+        client = services.client_manager().get(_connection)
+        if not client or not client.active_sim: return
+        
+        bits = {
+            "marriage": (bit_manager.get(15816), "romantic-Married"),
+            "engaged": (bit_manager.get(15814), "romantic-Engaged"),
+            "romance": (bit_manager.get(15822), "romantic-Significant_Other"),
+            "best_friends": (bit_manager.get(15794), "friendship-BFF"),
+            "friends": (bit_manager.get(15797), "friendship-Good_Friends")
+        }
+        
+        active_set = ACTIVE_CONFIG.get("sets", {}).get(str(set_id), {})
+        p_type = active_set.get("harmony_partnership", "none").lower()
+        
+        is_npc = (sim_info.household != client.active_sim.household)
+        
+        if not is_npc and p_type == "marriage":
+            p_type = "romance"
+            if debug_console: out(f"[DEBUG] Haushalts-Override: Marriage -> Romance fuer {sim_info.first_name}")
+            
+        targets = [client.active_sim.sim_info] if is_npc else list(sim_info.household)
+
+        for member in targets:
+            if member and member.sim_id != sim_info.sim_id:
+                try:
+                    f_track = stat_manager.get(16650)
+                    r_track = stat_manager.get(16651)
+                    if f_track: sim_info.relationship_tracker.set_relationship_score(member.sim_id, active_set.get("harmony_friendship", 100), f_track)
+                    if r_track: sim_info.relationship_tracker.set_relationship_score(member.sim_id, active_set.get("harmony_romance", 100), r_track)
+                    
+                    has_married = sim_info.relationship_tracker.has_bit(member.sim_id, bits["marriage"][0]) if bits["marriage"][0] else False
+                    has_engaged = sim_info.relationship_tracker.has_bit(member.sim_id, bits["engaged"][0]) if bits["engaged"][0] else False
+                    has_romance = sim_info.relationship_tracker.has_bit(member.sim_id, bits["romance"][0]) if bits["romance"][0] else False
+                    has_bff = sim_info.relationship_tracker.has_bit(member.sim_id, bits["best_friends"][0]) if bits["best_friends"][0] else False
+                    
+                    current_target = p_type
+                    
+                    if current_target == "marriage":
+                        if not has_married:
+                            b_obj, b_cmd = bits["marriage"]
+                            if b_obj: sim_info.relationship_tracker.add_relationship_bit(member.sim_id, b_obj)
+                            if b_cmd: sims4.commands.execute(f'relationship.add_bit {sim_info.sim_id} {member.sim_id} {b_cmd}', _connection)
+                            
+                            if bits["marriage"][0] and not sim_info.relationship_tracker.has_bit(member.sim_id, bits["marriage"][0]):
+                                current_target = "romance"
+                                stats['errors'].append(f"Hochzeit mit {member.first_name} blockiert, Fallback auf Romance.")
+                                if debug_console: out(f"[DEBUG ERROR] Hochzeit blockiert. Kaskade zu Romance.")
+                    
+                    if current_target == "engaged":
+                        if not has_married and not has_engaged:
+                            b_obj, b_cmd = bits["engaged"]
+                            if b_obj: sim_info.relationship_tracker.add_relationship_bit(member.sim_id, b_obj)
+                            if b_cmd: sims4.commands.execute(f'relationship.add_bit {sim_info.sim_id} {member.sim_id} {b_cmd}', _connection)
+                            
+                            if bits["engaged"][0] and not sim_info.relationship_tracker.has_bit(member.sim_id, bits["engaged"][0]):
+                                current_target = "romance"
+                                stats['errors'].append(f"Verlobung mit {member.first_name} blockiert, Fallback auf Romance.")
+                    
+                    if current_target == "romance":
+                        if not has_married and not has_engaged and not has_romance:
+                            b_obj, b_cmd = bits["romance"]
+                            if b_obj: sim_info.relationship_tracker.add_relationship_bit(member.sim_id, b_obj)
+                            if b_cmd: sims4.commands.execute(f'relationship.add_bit {sim_info.sim_id} {member.sim_id} {b_cmd}', _connection)
+
+                    if current_target == "best_friends":
+                        if not has_bff:
+                            b_obj, b_cmd = bits["best_friends"]
+                            if b_obj: sim_info.relationship_tracker.add_relationship_bit(member.sim_id, b_obj)
+                            if b_cmd: sims4.commands.execute(f'relationship.add_bit {sim_info.sim_id} {member.sim_id} {b_cmd}', _connection)
+                    elif current_target == "friends":
+                        if not has_bff:
+                            b_obj, b_cmd = bits["friends"]
+                            if b_obj: sim_info.relationship_tracker.add_relationship_bit(member.sim_id, b_obj)
+                            if b_cmd: sims4.commands.execute(f'relationship.add_bit {sim_info.sim_id} {member.sim_id} {b_cmd}', _connection)
+
+                except Exception as inner_e:
+                    stats['errors'].append(f"Harmonie-Update zu {getattr(member, 'first_name', 'Unbekannt')} uebersprungen.")
+                    
+        stats['harmony'] = p_type
+        msg = f"Harmonie fuer {sim_info.first_name} aktualisiert (Ziel-Status: {p_type})."
+        _log(msg)
+        if debug_console: out(f"[DEBUG] {msg}")
+    except Exception as e:
+        stats['errors'].append(f"Harmonie Modul fehlgeschlagen.")
+
+def _apply_traits_and_flags(sim_info, mode, set_id, interest_override, _connection, stats, out, debug_console):
+    try:
+        active_set = ACTIVE_CONFIG.get("sets", {}).get(str(set_id), {})
+        occult_type = _get_occult_type(sim_info)
+        occult_prefs = active_set.get("occult_settings", {}).get(occult_type, {})
+
+        if mode in ['clean', 'remove_bad']:
+            excludes = active_set.get("exclude_all", []).copy()
+            excludes.extend(occult_prefs.get("exclude", []))
+            for t in list(sim_info.get_traits()):
+                t_name = getattr(t, '__name__', 'unbekannt').lower()
+                try:
+                    if any(ex in t_name for ex in excludes if ex):
+                        sims4.commands.execute(f'traits.remove_trait {t_name} {sim_info.sim_id}', _connection)
+                        stats['traits_rem'] += 1
+                        if debug_console: out(f"[DEBUG] Trait entfernt: {t_name}")
+                except Exception: 
+                    stats['errors'].append(f"Konnte Trait '{t_name}' nicht entfernen.")
+
+        if mode in ['add_only', 'clean']:
+            to_add = active_set.get("traits_all", []).copy()
+            to_add.extend(occult_prefs.get("traits", []))
+            if sim_info.gender == Gender.MALE: to_add.extend(active_set.get("traits_sex_male", []))
+            else: to_add.extend(active_set.get("traits_sex_female", []))
+            
+            for t_name in set(to_add):
+                try:
+                    sims4.commands.execute(f'traits.equip_trait {t_name} {sim_info.sim_id}', _connection)
+                    stats['traits_add'] += 1
+                    if debug_console: out(f"[DEBUG] Trait hinzugefuegt: {t_name}")
+                except Exception:
+                    stats['errors'].append(f"Konnte Trait '{t_name}' nicht hinzufuegen.")
+                    
+        _log(f"-> {stats['traits_rem']} Traits entfernt, {stats['traits_add']} Traits hinzugefuegt.")
+    except Exception as e:
+        stats['errors'].append("Trait-Modul komplett fehlgeschlagen.")
+
+# --- BEFEHLE ---
 @sims4.commands.Command('make_god', command_type=sims4.commands.CommandType.Live)
-def cmd_make_god(target_mode:str='active', set_id:str='0', interest_override:str='auto', _connection=None):
-    output = sims4.commands.CheatOutput(_connection)
-    output(t("init"))
-    
+def cmd_make_god(*args, _connection=None):
+    load_config()
+    out = sims4.commands.CheatOutput(_connection)
+
+    try: sims4.commands.cheats_enabled = True
+    except: pass
+
     client = services.client_manager().get(_connection)
-    if not client or not client.active_sim: return output(t("no_target"))
+    if not client or not client.active_sim: return
+    
+    active_sim = client.active_sim.sim_info
+    active_household = active_sim.household
     
     targets = []
-    if target_mode == 'all': targets = list(client.active_sim.sim_info.household)
-    elif target_mode == 'active': targets = [client.active_sim.sim_info]
-    elif target_mode.isdigit():
-        sim_info = services.sim_info_manager().get(int(target_mode))
-        if sim_info: targets = [sim_info]
-
-    sets = ACTIVE_CONFIG.get("sets", {})
-    active_set = sets.get(str(set_id), sets.get("0", DEFAULT_CONFIG["sets"]["0"]))
-    set_name = active_set.get("name", f"Set {set_id}")
-    output(f"{t('set_loaded')}{set_name}")
-    _log(f"--- BATCH MAKE_GOD GESTARTET (Targets: {len(targets)}) ---")
-
-    for sim_info in targets:
-        _apply_traits_and_flags(sim_info, 'clean', set_id, interest_override, _connection)
-        _apply_skills(sim_info, _connection)
-        _apply_occult_motives(sim_info, set_id, _connection)
-        _apply_harmony(sim_info, set_id, _connection)
-        _apply_master(sim_info, _connection)
-        sat_points = active_set.get("satisfaction_points", 0)
-        if sat_points > 0:
-            sims4.commands.execute(f'sims.give_satisfaction_points {sat_points} {sim_info.sim_id}', _connection)
+    set_id = 'auto'
+    debug_console = False
     
+    # 1. Debug-Flag herausfiltern, egal wo es steht
+    args_str = [str(a) for a in args]
+    if 'debug' in [a.lower() for a in args_str]:
+        debug_console = True
+        args_str = [a for a in args_str if a.lower() != 'debug']
+
+    # 2. Argumente intelligent parsen
+    if not args_str:
+        targets = list(active_household)
+    else:
+        mode = args_str[0].lower()
+        if mode == 'all':
+            targets = list(active_household)
+            if len(args_str) > 1: set_id = args_str[1]
+        elif mode == 'active':
+            targets = [active_sim]
+            if len(args_str) > 1: set_id = args_str[1]
+        elif mode == 'id':
+            if len(args_str) > 1:
+                try:
+                    sim_id = int(args_str[1])
+                    found_sim = services.sim_info_manager().get(sim_id)
+                    if found_sim: targets = [found_sim]
+                except: pass
+            if len(args_str) > 2: set_id = args_str[2]
+        elif mode == 'name':
+            if len(args_str) > 2:
+                first = args_str[1].lower()
+                last = args_str[2].lower()
+                for sim in services.sim_info_manager().get_all():
+                    if getattr(sim, 'first_name', '').lower() == first and getattr(sim, 'last_name', '').lower() == last:
+                        targets = [sim]
+                        break
+            if len(args_str) > 3: set_id = args_str[3]
+        else:
+            targets = list(active_household)
+            set_id = args_str[0]
+
+    # Fehler werfen, falls Target nicht existiert
+    if not targets:
+        out("[FEHLER] Ziel nicht gefunden. Ueberpruefe Name oder ID.")
+        return
+        
+    _log(f"--- BATCH MAKE_GOD GESTARTET (Targets: {len(targets)}) ---")
+    if debug_console: out(f"--- BATCH MAKE_GOD GESTARTET (Debug Mode ON) ---")
+    
+    for sim_info in targets:
+        out(f"--- {sim_info.first_name} gestartet ---")
+        
+        # Tracking-Dictionary pro Sim
+        stats = {
+            'traits_rem': 0, 'traits_add': 0,
+            'skills': 0, 'motives': 0, 'mastered': False,
+            'harmony': 'none', 'errors': []
+        }
+        
+        try:
+            sid = str(set_id)
+            if sid == 'auto':
+                is_npc = (sim_info.household != active_household)
+                pk = f"{'npc' if is_npc else 'playable'}_{'male' if sim_info.gender == Gender.MALE else 'female'}"
+                sid = ACTIVE_CONFIG.get("auto_profiles", {}).get("option_1", {}).get(pk, "0")
+            
+            _apply_traits_and_flags(sim_info, 'clean', sid, 'auto', _connection, stats, out, debug_console)
+            _apply_skills(sim_info, _connection, stats, out, debug_console)
+            _apply_occult_motives(sim_info, sid, _connection, stats, out, debug_console)
+            _apply_harmony(sim_info, sid, _connection, stats, out, debug_console)
+            _apply_master(sim_info, sid, _connection, stats, out, debug_console)
+            
+        except Exception as e:
+            msg = f"SCHWERER FEHLER bei {getattr(sim_info, 'first_name', 'Sim')}: {str(e)}"
+            _log(msg)
+            stats['errors'].append(msg)
+
+        # Zusammenfassung in der Konsole ausgeben
+        for err in stats['errors']:
+            out(f"  -> Uebersprungen/Fehler: {err}")
+            
+        changes = stats['traits_rem'] + stats['traits_add'] + stats['skills'] + stats['motives']
+        if changes == 0 and not stats['mastered']:
+            out(f"--- {sim_info.first_name} abgeschlossen: Keine Aenderungen vorgenommen.\n")
+        else:
+            out(f"--- {sim_info.first_name} abgeschlossen: +{stats['traits_add']} Traits, -{stats['traits_rem']} Traits, {stats['skills']} Skills max, {stats['motives']} Motive fixiert.\n")
+
     try:
-        if targets:
-            first_sim = targets[0]
-            current_funds = first_sim.household.funds.money
-            add_f = active_set.get("add_funds", 0)
-            max_f = active_set.get("max_funds", 9999999)
-            new_funds = min(current_funds + add_f, max_f)
+        active_set = ACTIVE_CONFIG.get("sets", {}).get(str(set_id), ACTIVE_CONFIG.get("sets", {}).get("0", {}))
+        add_f = active_set.get("add_funds", 0)
+        if add_f > 0 and targets:
+            current_funds = targets[0].household.funds.money
+            new_funds = min(current_funds + add_f, active_set.get("max_funds", 9999999))
             diff = new_funds - current_funds
             if diff > 0:
                 sims4.commands.execute(f'sims.modify_funds {diff}', _connection)
-                output(t("funds_added"))
                 _log(f"Haushaltskonto erhoeht um {diff}.")
+                out(f"--- Haushaltskonto um {diff} Simoleons erhoeht ---")
     except: pass
 
-@sims4.commands.Command('make_god_auto', command_type=sims4.commands.CommandType.Live)
-def cmd_make_god_auto(option_id:str='1', target_sim_id:int=None, _connection=None):
-    output = sims4.commands.CheatOutput(_connection)
-    sim_info = get_target_sim(target_sim_id, _connection)
-    if not sim_info: return output(t("no_target"))
-    
-    is_npc = getattr(sim_info, 'is_npc', False)
-    status_key = "npc" if is_npc else "playable"
-    gender_key = "male" if sim_info.gender == Gender.MALE else "female"
-    profile_key = f"{status_key}_{gender_key}"
-    
-    # Hier holen wir die gewählte Option aus der Config (Fallback auf option_1)
-    auto_profiles = ACTIVE_CONFIG.get("auto_profiles", {})
-    selected_option = auto_profiles.get(f"option_{option_id}", auto_profiles.get("option_1", {}))
-    set_id = selected_option.get(profile_key, "0")
-    
-    active_set = ACTIVE_CONFIG.get("sets", {}).get(str(set_id), {})
-    set_name = active_set.get("name", f"Set {set_id}")
-    output(f"Auto-Detect ({profile_key} | Opt {option_id}): {t('set_loaded')}{set_name}")
-    _log(f"--- MAKE_GOD_AUTO GESTARTET fuer {sim_info.first_name} (Profil: {profile_key}, Opt: {option_id}) ---")
-
-    _apply_traits_and_flags(sim_info, 'clean', set_id, 'auto', _connection)
-    _apply_skills(sim_info, _connection)
-    _apply_occult_motives(sim_info, set_id, _connection)
-    _apply_harmony(sim_info, set_id, _connection)
-    _apply_master(sim_info, _connection)
-    
-    sat_points = active_set.get("satisfaction_points", 0)
-    if sat_points > 0:
-        sims4.commands.execute(f'sims.give_satisfaction_points {sat_points} {sim_info.sim_id}', _connection)
-    
-    if not is_npc:
-        try:
-            current_funds = sim_info.household.funds.money
-            add_f = active_set.get("add_funds", 0)
-            max_f = active_set.get("max_funds", 9999999)
-            new_funds = min(current_funds + add_f, max_f)
-            diff = new_funds - current_funds
-            if diff > 0:
-                sims4.commands.execute(f'sims.modify_funds {diff}', _connection)
-                output(t("funds_added"))
-                _log(f"Haushaltskonto erhoeht um {diff}.")
-        except: pass
-
-# ==========================================
-# DUMP FUNKTIONEN
-# ==========================================
-def _get_dump_filepath(sim_info, prefix):
-    gender_str = str(sim_info.gender).split('.')[-1].lower()
-    occult_str = "human"
-    if hasattr(sim_info, 'occult_tracker') and sim_info.occult_tracker is not None:
-        if sim_info.occult_tracker.has_any_occult_or_part_occult_trait():
-            try:
-                occult_types = sim_info.occult_tracker.occult_types
-                if occult_types:
-                    occult_str = str(list(occult_types)[0]).split('.')[-1].lower()
-            except:
-                occult_str = "occult"
-                
-    current_file = os.path.abspath(__file__)
-    mod_folder = os.path.dirname(current_file.split('.ts4script')[0]) if '.ts4script' in current_file else os.path.dirname(current_file)
-    filename = f"{prefix}_{gender_str}_{occult_str}_{sim_info.first_name}.txt"
-    return os.path.join(mod_folder, filename)
-
-@sims4.commands.Command('make_god_dump_stats', command_type=sims4.commands.CommandType.Live)
-def cmd_make_god_dump_stats(_connection=None):
-    output = sims4.commands.CheatOutput(_connection)
-    client = services.client_manager().get(_connection)
-    
-    if client is None or client.active_sim is None:
-        output("Fehler: Kein aktiver Sim gefunden.")
-        return
-        
-    sim_info = client.active_sim.sim_info
-    filepath = _get_dump_filepath(sim_info, "god_dump_stats")
-    
-    try:
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(f"=== STATISTIC & COMMODITY DUMP FUER {sim_info.first_name} {sim_info.last_name} ===\n")
-            f.write("-" * 60 + "\n\n")
-            
-            stat_tracker = sim_info.get_tracker(sims4.resources.Types.STATISTIC)
-            if stat_tracker is not None:
-                stats_list = []
-                for stat in stat_tracker:
-                    stat_type = getattr(stat, 'stat_type', type(stat))
-                    stat_name = getattr(stat_type, '__name__', str(stat_type))
-                    current_value = stat.get_value()
-                    stats_list.append(f"[{stat_name}] - Aktueller Wert: {current_value}")
-                
-                stats_list.sort()
-                for line in stats_list:
-                    f.write(line + "\n")
-                    
-        output(f"Stats-Dump erfolgreich: {filepath}")
-    except Exception as e:
-        output(f"Fehler beim Erstellen des Stats-Dumps: {e}")
-
-@sims4.commands.Command('make_god_dump_traits', command_type=sims4.commands.CommandType.Live)
-def cmd_make_god_dump_traits(_connection=None):
-    output = sims4.commands.CheatOutput(_connection)
-    client = services.client_manager().get(_connection)
-    
-    if client is None or client.active_sim is None:
-        output("Fehler: Kein aktiver Sim gefunden.")
-        return
-        
-    sim_info = client.active_sim.sim_info
-    filepath = _get_dump_filepath(sim_info, "god_dump_traits")
-    
-    try:
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(f"=== TRAITS DUMP FUER {sim_info.first_name} {sim_info.last_name} ===\n")
-            f.write("-" * 60 + "\n\n")
-            
-            if hasattr(sim_info, 'trait_tracker') and sim_info.trait_tracker is not None:
-                traits_list = []
-                for trait in sim_info.trait_tracker.equipped_traits:
-                    trait_name = getattr(trait, '__name__', str(trait))
-                    trait_type = str(getattr(trait, 'trait_type', 'UNKNOWN')).split('.')[-1]
-                    traits_list.append(f"[{trait_type}] {trait_name}")
-                
-                traits_list.sort()
-                for line in traits_list:
-                    f.write(line + "\n")
-            else:
-                f.write("Kein Trait-Tracker gefunden.\n")
-                    
-        output(f"Traits-Dump erfolgreich: {filepath}")
-    except Exception as e:
-        output(f"Fehler beim Erstellen des Traits-Dumps: {e}")
-
 @sims4.commands.Command('make_god_dump', command_type=sims4.commands.CommandType.Live)
-def cmd_make_god_dump_all(_connection=None):
-    output = sims4.commands.CheatOutput(_connection)
-    output("Starte vollstaendigen Dump (Stats & Traits)...")
-    cmd_make_god_dump_stats(_connection)
-    cmd_make_god_dump_traits(_connection)
-    output("Vollstaendiger Dump abgeschlossen! Siehe Mod-Ordner.")
+def cmd_make_god_dump(_connection=None):
+    client = services.client_manager().get(_connection)
+    sim_info = client.active_sim.sim_info
+    path = os.path.join(MOD_FOLDER, f"dump_{sim_info.first_name}.txt")
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(f"=== DUMP FUER {sim_info.first_name} ===\n")
+        f.write(f"Occult Type: {_get_occult_type(sim_info)}\n\n")
+        
+        if hasattr(sim_info, 'trait_tracker') and sim_info.trait_tracker:
+            for trait in sim_info.trait_tracker.equipped_traits:
+                f.write(f"[TRAIT] {getattr(trait, '__name__', '')}\n")
+    sims4.commands.CheatOutput(_connection)(f"Dump erstellt: {path}")
+
+load_config()

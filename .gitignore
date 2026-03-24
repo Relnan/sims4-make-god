@@ -2,6 +2,7 @@
 *.ts4script
 all_traits_dump.txt
 *.txt
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

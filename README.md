@@ -1,186 +1,133 @@
-# Sims 4 Mod: Make God (Gott-Modus)
+# Sims 4 Mod: Make God
 
-Dieses Skript ist ein modulares Werkzeug, um Sims in "Götter" zu verwandeln. Es maximiert Fähigkeiten, optimiert Traits (inkl. Mod-Support), pusht Karrieren und Beziehungen und verwaltet das Haushaltskonto – alles dynamisch konfigurierbar durch Profile (Sets)!
+## 🇩🇪 Deutsch
 
-## 🚀 Features
-* **Modulare Befehle:** Führe nur das aus, was du brauchst.
-* **Auto-Profile:** Das Skript ordnet anhand von Geschlecht und Status (NPC/Playable) automatisch das richtige Profil (Set) zu.
-* **JSON-Konfiguration:** Alle Werte, Traits und Exclude-Listen können während das Spiel läuft geändert werden.
-* **Trait-Cleaner:** Entfernt automatisch nervige oder negative EA-Traits.
-* **Debug-Logging:** Optionale `.txt` Log-Datei im Mods-Ordner für detailliertes Troubleshooting.
+### Was macht diese Mod?
+Stell dir vor, du hast einen magischen Zauberstab für deine Sims. Mit nur einem einzigen Befehl kannst du deinen gesamten Haushalt (oder auch fremde Sims auf der Straße) in absolute "Götter" verwandeln. 
+Dieses Skript optimiert deine Sims automatisch basierend auf einer Einstellungsdatei (`make_god_config.json`). 
 
-## 🛠️ Installation
-1. Kopiere die Datei `make_god.ts4script` in deinen Sims 4 `Mods`-Ordner.
-2. Kopiere die Datei `make_god_config.json` in den `Mods`-Ordner (oder lass das Skript beim ersten Start eine Vorlage erstellen).
-3. Stelle sicher, dass in den Sims 4 Spieloptionen **Script-Mods erlaubt** sind.
+**Was genau passiert?**
+* **Perfektion:** Schlechte Eigenschaften werden gelöscht, gute hinzugefügt.
+* **Bedürfnisse:** Die Bedürfnisse deiner Sims werden eingefroren (niemand muss mehr aufs Klo!). **Hinweis:** Dies passiert basierend auf deiner Einstellungsdatei. Standardmäßig ist es für Menschen und Okkulte Sims (wie Vampir-Durst oder Geister-Ausdauer) aktiviert, lässt sich aber pro Spezies abschalten.
+* **Liebe & Freundschaft:** Alle im gespielten Haushalt lieben sich plötzlich und gehen eine feste Beziehung ("Romance") ein. Das Skript verhindert hier automatisch Ehen innerhalb des Haushalts, um Spielabstürze durch Mehrfachehen zu vermeiden. Fremde NPCs können jedoch sofort geheiratet werden!
+* **Reichtum:** Das Haushaltskonto erhält eine massive (in der Datei konfigurierbare) Finanzspritze und Zufriedenheitspunkte werden vergeben.
+* **Fähigkeiten & Karriere:** Alle Fähigkeiten werden auf das Maximum gesetzt und Karrieren sowie Bestreben werden sofort abgeschlossen.
 
-## ⚙️ Konfiguration (`make_god_config.json`)
-Die komplette Steuerung laeuft ueber die Datei `make_god_config.json`.
-Nach Aenderungen im Spiel immer `reload_god_config` ausfuehren, damit die Werte ohne Neustart uebernommen werden.
+### Installation
+1. Lade die Datei `make_god.ts4script` herunter und kopiere sie in deinen Sims 4 `Mods`-Ordner.
+2. Kopiere die Einstellungsdatei `make_god_config.json` in denselben Ordner.
+3. Starte das Spiel, gehe in die Spieloptionen unter "Weiteres" und setze ein Häkchen bei **Script-Mods erlaubt**. Starte das Spiel danach einmal neu.
 
-### 1) Globale Optionen
-* `language`: Sprache fuer Konsolentexte (`de` oder `en`).
-* `debug_log`: `true`/`false` fuer Log-Datei `make_god_debug.txt`.
+### So benutzt du die Mod (Die Befehle)
+Öffne im Spiel die Cheat-Konsole (Drücke `Strg + Shift + C` auf der Tastatur) und tippe `testingcheats true` ein. Danach kannst du diese Befehle nutzen:
 
-### 2) Auto-Profile (`auto_profiles`)
-`make_god_auto` waehlt ueber diese Zuordnung automatisch ein Set.
+* **`make_god`**
+  Der absolute Standard-Befehl. Er verwandelt **deinen gesamten, aktuell gespielten Haushalt** in perfekte Sims. (Tipp: Wenn du die `make_god_config.json` während des Spielens bearbeitest und speicherst, lädt dieser Befehl die neuen Einstellungen völlig automatisch!)
+* **`make_god active`**
+  Verwandelt **nur den Sim**, den du gerade angeklickt/ausgewählt hast.
+* **`make_god name Vorname Nachname`** Du siehst einen Sim auf der Straße und willst ihn optimieren? Tippe einfach seinen Namen ein! (Beispiel: `make_god name Bella Grusel`). Der Sim wird sofort perfektioniert und baut eine volle Beziehung zu deinem gespielten Sim auf.
+* **`make_god id 1234567890`** Gleiches Prinzip wie beim Namen, nur mit der genauen Sim-ID, falls du diese kennst.
+* **`make_god_dump`**
+  Ein Werkzeug für Neugierige. Wähle einen Sim aus und tippe diesen Befehl. Die Mod erstellt in deinem Mods-Ordner eine Textdatei, die dir genau anzeigt, welche versteckten Merkmale (Traits) und welchen "Okkult-Typ" das Spiel bei diesem Sim sieht.
+* **Der Debug-Modus:**
+  Wenn du wissen willst, was das Skript im Hintergrund genau macht, hänge einfach das Wort `debug` an deinen Befehl an (z. B. `make_god debug` oder `make_god name Bella Grusel debug`). Die Konsole zeigt dir dann jeden einzelnen Schritt an!
 
-Beispiel:
-* `option_1.playable_male = "0"` -> spielbarer maennlicher Sim bekommt Set `0`
-* `option_1.npc_female = "1"` -> weiblicher NPC bekommt Set `1`
-
-Du hast 3 Profile:
-* `option_1`
-* `option_2`
-* `option_3`
-
-Aufruf im Spiel:
-* `make_god_auto 1` nutzt `option_1`
-* `make_god_auto 2` nutzt `option_2`
-* `make_god_auto 3` nutzt `option_3`
-
-### 3) Sets (`sets`)
-Jedes Set ist ein Profil mit eigener ID (`"0"`, `"1"`, `"2"`, ...).
-Diese ID verwendest du in Befehlen wie `make_god active 0 auto` oder `trait_god clean 2 bi`.
-
-#### Bedeutungen der Set-Felder
-* `name`: Anzeigename in der Konsole.
-* `harmony_friendship`: Zielwert Freundschaft (typisch 0 bis 100).
-* `harmony_romance`: Zielwert Romantik (typisch 0 bis 100).
-* `harmony_reduce`: 
-  * `false` = Werte werden nur erhoeht (nie abgesenkt)
-  * `true` = Werte duerfen auch abgesenkt werden
-* `freeze_occult_motives`: Fuellt okkulte Motive und stoppt deren Verfall.
-* `satisfaction_points`: Punkte pro Sim bei `make_god`/`make_god_auto`.
-* `add_funds`: Betrag, der zum Haushalt hinzugefuegt wird.
-* `max_funds`: Obergrenze fuer Haushaltsgeld.
-
-#### Trait-Cleaning (entfernen)
-Alle `exclude_*` Listen arbeiten ueber Teilstrings (case-insensitive).
-Wenn ein Trait-Name den Text enthaelt, wird er entfernt.
-
-* `exclude_all`: Fuer alle Sims.
-* `exclude_sex_male`: Zusaetzlich fuer maennliche Sims.
-* `exclude_sex_female`: Zusaetzlich fuer weibliche Sims.
-* `exclude_interest_male`: Zusaetzlich bei Interesse `m`.
-* `exclude_interest_female`: Zusaetzlich bei Interesse `f`.
-* `exclude_interest_bi`: Zusaetzlich bei Interesse `bi`.
-
-#### Traits und Flags (hinzufuegen)
-* `traits_all`: Immer hinzufuegen.
-* `traits_sex_male`: Nur fuer maennliche Sims.
-* `traits_sex_female`: Nur fuer weibliche Sims.
-* `flags_interest_male`: Bei Interesse `m`.
-* `flags_interest_female`: Bei Interesse `f`.
-* `flags_interest_bi`: Bei Interesse `bi`.
-
-Hinweis:
-Zusatzlich werden alle Gameplay-Traits dynamisch aus dem Spiel ermittelt und hinzugefuegt,
-ausser sie matchen etwas in `exclude_all`.
-
-### 4) Sicherer Workflow fuer Aenderungen
-1. Datei `make_god_config.json` bearbeiten.
-2. Im Spiel `reload_god_config` ausfuehren.
-3. Mit `trait_god clean <set_id> auto` oder `make_god active <set_id> auto` testen.
-4. Falls noetig, Log in `make_god_debug.txt` pruefen.
-
-### 5) Mini-Beispiel fuer ein neues Set
-```json
-"9": {
-  "name": "Test Set",
-  "harmony_friendship": 25,
-  "harmony_romance": 75,
-  "harmony_reduce": false,
-  "freeze_occult_motives": false,
-  "satisfaction_points": 5000,
-  "add_funds": 10000,
-  "max_funds": 250000,
-  "exclude_all": ["mean", "jealous"],
-  "exclude_sex_male": [],
-  "exclude_sex_female": [],
-  "exclude_interest_male": [],
-  "exclude_interest_female": [],
-  "exclude_interest_bi": [],
-  "traits_all": ["trait_GreatKisser"],
-  "traits_sex_male": [],
-  "traits_sex_female": [],
-  "flags_interest_male": ["trait_SexualOrientation_WooHooInterests_Female"],
-  "flags_interest_female": ["trait_SexualOrientation_WooHooInterests_Male"],
-  "flags_interest_bi": [
-    "trait_SexualOrientation_WooHooInterests_Female",
-    "trait_SexualOrientation_WooHooInterests_Male"
-  ]
-}
-```
-
-## 🔓 Cheats aktivieren (Voraussetzung)
-Damit die Konsole im Spiel funktioniert, musst du die Cheat-Konsole öffnen und den "Testing-Modus" aktivieren:
-1. Drücke im Spiel gleichzeitig `Strg + Shift + C`.
-2. Tippe oben in die weiße Leiste `testingcheats true` ein und drücke Enter.
-3. Die Konsole bestätigt mit "Cheats are enabled".
-
-## 💻 Konsolen-Befehle
-* `make_god [target_mode] [set_id] [interest]`
-  * `target_mode`: `active`, `all` oder eine Sim-ID
-  * `set_id`: Profil-ID aus `sets` (Standard: `0`)
-  * `interest`: `auto`, `m`, `f`, `bi`
-  * Beispiel: `make_god active 0 auto`
-* `make_god_auto [option_id] [target_sim_id]`
-  * `option_id`: `1`, `2`, `3` (liest `auto_profiles.option_x`)
-  * Wählt je nach NPC/Playable + Geschlecht automatisch das passende Set.
-* `trait_god [mode] [set_id] [interest] [target_sim_id]`
-  * Modi: `add_only`, `clean`, `remove_bad`
-  * Beispiel: `trait_god clean 0 bi`
-* `skill_god [target_sim_id]` - Setzt alle Skills des Ziel-Sims auf Max.
-* `harmony_god [set_id] [target_sim_id]` - Setzt Freundschaft/Romantik gemäß Set.
-* `master_god [target_sim_id]` - Karrieren pushen + aktuelles Bestreben abschließen.
-* `reload_god_config` - Lädt `make_god_config.json` im laufenden Spiel neu.
-* `make_god_dump_stats` - Dump aller Statistics/Commodities des aktiven Sims.
-* `make_god_dump_traits` - Dump aller ausgerüsteten Traits des aktiven Sims.
-* `make_god_dump` - Führt beide Dumps nacheinander aus.
+### Die Einstellungsdatei (`make_god_config.json`) anpassen
+Keine Angst vor dieser Datei! Du kannst sie einfach mit dem Windows-Editor (Notepad) öffnen. Hier kannst du die Regeln für deine "Götter" ändern.
+Ein paar einfache Beispiele:
+* `"harmony_partnership": "marriage"` -> Ändere "marriage" (Hochzeit) zu "romance" (Feste Beziehung) oder "none" (Nichts), wenn fremde Sims nicht sofort heiraten sollen.
+* `"add_funds": 1000000` -> Bestimmt, wie viele Simoleons das Haushaltskonto bei Ausführung des Befehls dazu bekommt.
+* `"occult_settings"` -> Hier kannst du für Vampire, Meerjungfrauen, Feen etc. einstellen, ob ihre Spezial-Bedürfnisse eingefroren werden sollen (`"freeze_motives": true` oder `false`).
 
 ---
 
-## 🧪 Testszenario: Die Versuchskaninchen
-Um alle Funktionen des Skripts fehlerfrei zu testen, empfehlen wir diesen Ablauf in einem neuen Spielstand.
+## 🧪 So testest du die Mod (Tutorial)
+Wenn du sofort sehen willst, wie die Mod funktioniert, kannst du unser fertiges Test-Szenario ausprobieren. 
 
-### 1. Vorbereitung im CAS (Erstelle einen Sim)
-Erstelle einen Haushalt mit diesen 3 Sims und platziere sie auf einem leeren Grundstück:
-* **Sim 1: Arthur Anti-Gott (Männlich)**
-  * **Zweck:** Test für `trait_god clean` und geschlechterspezifische Checks.
-  * **Merkmale:** Böse, Faul, Hitzkopf (stehen auf der Exclude-Liste). Emotional: Hot-Headed, Lifestyle: Lazy, Social: Evil
-* **Sim 2: Bella Basic (Weiblich)**
-  * **Zweck:** Test für den Orchestrator `make_god active`.
-  * **Merkmale:** Snob, Düster, Tollpatschig. Emotional: Gloomy, Emotional: Clumsy, Social: Snob
-  * **Aufgabe vorab:** Gib ihr am Handy irgendeinen Job (z.B. Tellerwäscherin).
-* **Sim 3: Chris Chaos (Egal welches Geschlecht)**
-  * **Zweck:** Test für das smarte `make_god_auto` und Haushalts-Durchläufe.
-  * **Merkmale:** Zufällig.
+**Tipp:** Du musst die Sims nicht selbst erstellen! Suche in der Sims 4 Galerie einfach nach dem Haushalt **make_god Test** von der EA-ID **Relnan** und platziere ihn auf einem leeren Grundstück.
 
-### 2. Durchführung im Spiel
-Öffne die Cheat-Konsole (`Strg + Shift + C` -> `testingcheats true`).
+### Der Standard-Test
+Dieser Test-Haushalt enthält 3 Sims:
+1. **Arthur Anti-Gott:** Er ist böse, faul und ein Hitzkopf.
+2. **Bella Basic:** Sie ist tollpatschig und düster. Gib ihr am besten am Handy vorher noch schnell irgendeinen Job (z.B. Tellerwäscherin).
+3. **Chris Chaos:** Völlig zufällig generiert.
 
-**Test 1 (Arthur):**
-* Wähle Arthur aus.
-* Tippe: `trait_god remove_bad`
-* *Ergebnis:* Seine schlechten Traits verschwinden sofort.
-* Tippe: `harmony_god 0`
-* *Ergebnis:* Die Beziehung zu Bella und Chris springt auf 100.
+**Probier es aus:**
+1. Wähle **Bella** aus.
+2. Öffne die Konsole und tippe `make_god active debug`.
+3. **Beobachte die Magie:** Die Konsole zeigt dir, wie Bella plötzlich ihre Karriere meistert, negative Eigenschaften verliert, massig neue Fähigkeiten lernt und zur perfekten Simin wird.
+4. Tippe nun einfach `make_god` ein. Nun werden auch Arthur und Chris zu Göttern und alle drei haben plötzlich eine perfekte Liebes- und Freundschaftsbeziehung zueinander!
 
-**Test 2 (Bella):**
-* Wähle Bella aus.
-* Tippe: `make_god active`
-* *Ergebnis:* Das Skript heilt ihre negativen Traits, gibt ihr unzählige Gameplay-Vorteile, maximiert ihre Karriere, beendet ihr Bestreben, gibt ihr 11.000 Zufriedenheitspunkte und füllt das Haushaltskonto auf 9.999.999 Simoleons.
+### Der Okkult-Test (Wenn du Erweiterungen hast)
+Du besitzt Packs wie *Vampire*, *Werwölfe*, *Reich der Magie* oder *Life & Death*? Das Skript ist darauf vorbereitet!
+1. Füge dem Haushalt einfach einen Okkulten Sim hinzu (z. B. einen Geist aus dem Life & Death Pack, einen Vampir oder einen Werwolf).
+2. Wähle den Sim aus und tippe `make_god active`.
+3. **Das Ergebnis:** Das Skript erkennt automatisch die "Spezies" deines Sims. Es friert die richtigen Spezial-Bedürfnisse ein (z. B. die Geister-Ausdauer oder den Vampir-Durst) und verteilt passende Belohnungsmerkmale, ohne dass das Spiel Fehler wirft.
 
-**Test 3 (Chris & Auto-Detect):**
-* Wähle Chris aus.
-* Tippe: `make_god_auto 1`
-* *Ergebnis:* Die Konsole meldet `Auto-Detect (playable_male / playable_female): Set geladen: Default God`. Chris bekommt die exakten Götter-Eigenschaften zugewiesen.
-* Schau anschließend in deinen Mods-Ordner: Öffne die `make_god_debug.txt`, um exakt zu sehen, was das Skript im Hintergrund alles geleistet hat!
+***
 
-### 3. Dump-Funktionen prüfen
-* Wähle einen Sim aus.
-* Tippe: `make_god_dump`
-* *Ergebnis:* Zwei Dateien werden im Mod-Ordner erzeugt:
-  * `god_dump_stats_<gender>_<occult>_<name>.txt`
-  * `god_dump_traits_<gender>_<occult>_<name>.txt`
+# Sims 4 Mod: Make God
+
+## 🇬🇧 English
+
+### What does this mod do?
+Imagine having a magic wand for your Sims. With just one simple command, you can turn your entire household (or even random Sims on the street) into absolute "Gods".
+This script automatically optimizes your Sims based on a simple settings file (`make_god_config.json`).
+
+**What exactly happens?**
+* **Perfection:** Bad traits are deleted, and amazing ones are added.
+* **Needs:** Your Sims' needs are frozen completely (no more bathroom breaks!). **Note:** This depends on your settings file. By default, it is enabled for humans and Occult Sims (like freezing Vampire Thirst or Ghost Stamina), but it can be toggled per species.
+* **Love & Friendship:** Everyone in the played household will instantly love each other and enter a committed relationship ("Romance"). The script automatically prevents marriages *inside* the household to protect your game from polygamy crashes. However, foreign NPCs can be married instantly!
+* **Wealth:** Your household receives a massive (configurable) injection of funds, and satisfaction points are granted.
+* **Skills & Career:** All skills are instantly maxed out, careers are promoted to the top, and aspirations are completed.
+
+### Installation
+1. Download the file `make_god.ts4script` and place it in your Sims 4 `Mods` folder.
+2. Place the settings file `make_god_config.json` in the exact same folder.
+3. Start the game, go to your Game Options under "Other", and check the box for **Script Mods Allowed**. Restart your game once.
+
+### How to use the Mod (The Commands)
+Open the cheat console in-game (Press `Ctrl + Shift + C` on your keyboard) and type `testingcheats true`. After that, you can use these commands:
+
+* **`make_god`**
+  The easiest command. It turns your **entire currently played household** into perfect Sims. (Tip: If you edit and save your `make_god_config.json` while playing, this command will automatically load the new settings!)
+* **`make_god active`**
+  Transforms **only the Sim** you currently have selected.
+* **`make_god name Firstname Lastname`** See a random Sim on the street and want to optimize them? Just type their name! (Example: `make_god name Bella Goth`). They will instantly become perfect and build a full relationship with your active Sim.
+* **`make_god id 1234567890`** Same principle as the name command, but uses the exact Sim ID if you know it.
+* **`make_god_dump`**
+  A tool for the curious. Select a Sim and type this command. The mod will create a text file in your Mods folder showing exactly which hidden traits and "Occult Type" the game detects for this Sim.
+* **The Debug Mode:**
+  If you want to see exactly what the script is doing behind the scenes, just add the word `debug` to your command (e.g., `make_god debug` or `make_god name Bella Goth debug`). The console will tell you every single step it takes!
+
+### Tweaking the Settings File (`make_god_config.json`)
+Don't be afraid of this file! You can open it easily with a simple text editor like Notepad. Here you can change the rules for your "Gods".
+Some easy examples:
+* `"harmony_partnership": "marriage"` -> Change "marriage" to "romance" (boyfriend/girlfriend) or "none" if you don't want foreign Sims to marry instantly.
+* `"add_funds": 1000000` -> Determines how many Simoleons are added to the household account when the command is run.
+* `"occult_settings"` -> Here you can configure if Vampires, Mermaids, Ghosts, etc., should have their special needs frozen (`"freeze_motives": true` or `false`).
+
+---
+
+## 🧪 How to test the Mod (Tutorial)
+If you want to see how the mod works immediately, you can play our ready-made test scenario. 
+
+**Tip:** You don't have to create the Sims yourself! Just search the Sims 4 Gallery for the household name **make_god Test** by the EA-ID **Relnan** and place them on an empty lot.
+
+### The Standard Test
+This test household contains 3 Sims:
+1. **Arthur Anti-God:** He is evil, lazy, and a hothead.
+2. **Bella Basic:** She is clumsy and gloomy. (Give her a quick job on her phone before starting, like dishwasher).
+3. **Chris Chaos:** Completely randomly generated.
+
+**Try it out:**
+1. Select **Bella**.
+2. Open the console and type `make_god active debug`.
+3. **Watch the magic:** The console will show you exactly how Bella instantly masters her career, loses negative traits, gains max skills, and becomes a perfect Sim.
+4. Now simply type `make_god`. Arthur and Chris will also become Gods, and all three will suddenly have a perfect, flawless romantic and friendly relationship with each other!
+
+### The Occult Test (If you own Expansions)
+Do you own packs like *Vampires*, *Werewolves*, *Realm of Magic*, or *Life & Death*? The script is ready for them!
+1. Just add an Occult Sim to the household (e.g., a Ghost from the Life & Death pack, a Vampire, or a Werewolf).
+2. Select the Sim and type `make_god active`.
+3. **The Result:** The script automatically detects the "species" of your Sim. It safely freezes the correct special needs (like Ghost Stamina or Vampire Thirst) and hands out fitting reward traits without causing any game errors.

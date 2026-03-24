@@ -23,225 +23,81 @@
     },
     "sets": {
         "0": {
-            "name": "Ultimate Sex God (Immortal & Nude)",
+            "name": "Ultimate God",
             "harmony_friendship": 100,
             "harmony_romance": 100,
-            "harmony_reduce": false,
-            "freeze_occult_motives": true,
+            "harmony_partnership": "marriage",
             "satisfaction_points": 50000,
-            "add_funds": 9999999,
-            "max_funds": 9999999,
+            "occult_motives_map": {
+                "human": [
+                    "motive_hunger", "motive_energy", "motive_hygiene", "motive_bladder", "motive_fun", "motive_social"
+                ],
+                "alien": [
+                    "motive_hunger", "motive_energy", "motive_hygiene", "motive_bladder", "motive_fun", "motive_social"
+                ],
+                "vampire": [
+                    "commodity_motive_vampire_energy", "commodity_motive_vampire_thirst"
+                ],
+                "mermaid": [
+                    "commodity_motive_mermaid_hydration"
+                ],
+                "witch": [
+                    "commodity_motive_witchoccult_charge"
+                ],
+                "werewolf": [
+                    "commodity_Werewolf_Fury"
+                ],
+                "ghost": [
+                    "commodity_ghostpowers_stamina"
+                ],
+                "fairy": [
+                    "commodity_motive_fairyoccult_emotionalappetite", "commodity_motive_witchoccult_charge"
+                ]
+            },
+            "occult_settings": {
+                "human": { "freeze_motives": true, "traits": [], "exclude": [] },
+                "alien": { "freeze_motives": true, "traits": [], "exclude": [] },
+                "vampire": { "freeze_motives": false, "traits": ["trait_OccultVampire_Manifested"], "exclude": ["trait_LovesTheSun"] },
+                "mermaid": { "freeze_motives": true, "traits": [], "exclude": [] },
+                "witch": { "freeze_motives": true, "traits": ["trait_Knowledge_SlingerOfSpells"], "exclude": [] },
+                "werewolf": { "freeze_motives": true, "traits": [], "exclude": [] },
+                "ghost": { "freeze_motives": true, "traits": [], "exclude": [] },
+                "fairy": { "freeze_motives": true, "traits": ["trait_OccultFairy_HighFaeLineage"], "exclude": [] }
+            },
             "exclude_all": [
-                "evil", "lazy", "mean", "gloomy", "hotheaded", "jealous", "slob", "clumsy", 
-                "snob", "erratic", "unflirty", "squeamish", "nudityavoider", "sexuallyabstinent", 
-                "asocial", "shy"
+                "evil", "lazy", "mean", "gloomy", "hotheaded", "jealous", "slob", "clumsy", "snob", "erratic"
             ],
-            "exclude_sex_male": [],
-            "exclude_sex_female": [],
-            "exclude_interest_male": [],
-            "exclude_interest_female": [],
-            "exclude_interest_bi": [],
             "traits_all": [
                 "trait_Hidden_IsImmortal",
-                "trait_Longevity",
-                "TURBODRIVER:WickedWhims_Trait_AgelessSim_Hidden",
-                "trait_MTS_Deaderpool_McCommander_ImmortalFlag",
-                "trait_MTS_Deaderpool_McCommander_NoAgeFlag",
-                "trait_MTS_Deaderpool_McCommander_NoCullFlag",
-                
-                "TURBODRIVER:WickedWhims_Trait_Exhibitionist",
-                "TURBODRIVER:WickedWhims_Trait_Nudity_NoSweat_Reward",
-                "TURBODRIVER:WickedWhims_Trait_NudityAspiration_Bonus",
-                "TURBODRIVER:WickedWhims_Trait_Nudity_NudistLeaderAspiration",
-                "TURBODRIVER:WickedWhims_Trait_NudityEnthusiast",
-                "TURBODRIVER:WickedWhims_Trait_Nudity_NoUnderwear",
-                
-                "TURBODRIVER:WickedWhims_Trait_Sex_SexuallyAlluring",
-                "TURBODRIVER:WickedWhims_Trait_Relationships_Lustful",
-                "TURBODRIVER:WickedWhims_Trait_Relationships_Poly",
-                "TURBODRIVER:WickedWhims_Trait_Sex_AlwaysAccept",
-                
-                "trait_Alluring",
-                "trait_Beguiling",
-                "trait_GreatKisser",
-                "trait_Player",
-                "Deaderpool_MCCC_Trait_FlagNoJealousy",
-                "Deaderpool_MCCC_Trait_FlagMultiSpouse",
-                
-                "TURBODRIVER:WickedWhims_Trait_Attractiveness_Reward_UniqueLooks",
-                "TURBODRIVER:WickedWhims_Trait_BodyHair_STD_NoCrabs",
-                "trait_SicknessImmunity",
-                
-                "trait_Brave",
-                "trait_Carefree",
-                "trait_ForeverFresh",
-                "trait_ForeverFull",
-                "trait_HardlyHungry",
-                "trait_Independent",
-                "trait_NeverWeary",
-                "trait_PerfectHost",
-                "trait_Savant",
-                "trait_SeldomSleepy",
-                "trait_Shameless",
-                "trait_SteelBladder",
-                "trait_Antiseptic"
-            ],
-            "traits_sex_male": [],
-            "traits_sex_female": [
-                "TURBODRIVER:WickedWhims_Trait_Improved_Absorbency"
-            ],
-            "flags_interest_male": [
-                "trait_SexualOrientation_WooHooInterests_Female",
-                "trait_GenderOptions_AttractedTo_Female"
-            ],
-            "flags_interest_female": [
-                "trait_SexualOrientation_WooHooInterests_Male",
-                "trait_GenderOptions_AttractedTo_Male"
-            ],
-            "flags_interest_bi": [
-                "trait_SexualOrientation_WooHooInterests_Female",
-                "trait_SexualOrientation_WooHooInterests_Male",
-                "trait_GenderOptions_AttractedTo_Female",
-                "trait_GenderOptions_AttractedTo_Male"
+                "trait_GreatKisser"
             ]
         },
         "1": {
             "name": "Sex Only NPC",
             "harmony_friendship": 0,
             "harmony_romance": 100,
-            "harmony_reduce": true,
-            "freeze_occult_motives": false,
-            "satisfaction_points": 0,
-            "add_funds": 0,
-            "max_funds": 250000,
-            "exclude_all": [
-                "unflirty", "nudityavoider", "sexuallyabstinent", "jealous"
-            ],
-            "exclude_sex_male": [],
-            "exclude_sex_female": [],
-            "exclude_interest_male": [],
-            "exclude_interest_female": [
-                "TURBODRIVER:WickedWhims_Trait_CumSlut"
-            ],
-            "exclude_interest_bi": [],
+            "harmony_partnership": "none",
             "traits_all": [
-                "TURBODRIVER:WickedWhims_Trait_Exhibitionist",
-                "TURBODRIVER:WickedWhims_Trait_Sex_SexuallyAlluring",
-                "TURBODRIVER:WickedWhims_Trait_Relationships_Lustful",
-                "TURBODRIVER:WickedWhims_Trait_Sex_AlwaysAccept",
-                "trait_GreatKisser"
-            ],
-            "traits_sex_male": [],
-            "traits_sex_female": [],
-            "flags_interest_male": [
-                "trait_SexualOrientation_WooHooInterests_Female",
-                "trait_SexualOrientation_WooHooInterests_Male",
-                "trait_GenderOptions_AttractedTo_Female",
-                "trait_GenderOptions_AttractedTo_Male"
-            ],
-            "flags_interest_female": [
-                "trait_SexualOrientation_WooHooInterests_Female",
-                "trait_SexualOrientation_WooHooInterests_Male",
-                "trait_GenderOptions_AttractedTo_Female",
-                "trait_GenderOptions_AttractedTo_Male"
-            ],
-            "flags_interest_bi": [
-                "trait_SexualOrientation_WooHooInterests_Female",
-                "trait_SexualOrientation_WooHooInterests_Male",
-                "trait_GenderOptions_AttractedTo_Female",
-                "trait_GenderOptions_AttractedTo_Male"
+                "TURBODRIVER:WickedWhims_Trait_Sex_AlwaysAccept"
             ]
         },
         "2": {
             "name": "Comfortable Sex NPC",
             "harmony_friendship": 50,
             "harmony_romance": 100,
-            "harmony_reduce": false,
-            "freeze_occult_motives": false,
-            "satisfaction_points": 0,
-            "add_funds": 0,
-            "max_funds": 250000,
-            "exclude_all": [
-                "unflirty", "nudityavoider", "sexuallyabstinent", "jealous"
-            ],
-            "exclude_sex_male": [],
-            "exclude_sex_female": [],
-            "exclude_interest_male": [],
-            "exclude_interest_female": [],
-            "exclude_interest_bi": [],
+            "harmony_partnership": "friends",
             "traits_all": [
-                "TURBODRIVER:WickedWhims_Trait_Exhibitionist",
-                "TURBODRIVER:WickedWhims_Trait_Sex_SexuallyAlluring",
-                "TURBODRIVER:WickedWhims_Trait_Relationships_Lustful",
-                "TURBODRIVER:WickedWhims_Trait_Sex_AlwaysAccept",
-                "trait_GreatKisser"
-            ],
-            "traits_sex_male": [],
-            "traits_sex_female": [],
-            "flags_interest_male": [
-                "trait_SexualOrientation_WooHooInterests_Female",
-                "trait_SexualOrientation_WooHooInterests_Male",
-                "trait_GenderOptions_AttractedTo_Female",
-                "trait_GenderOptions_AttractedTo_Male"
-            ],
-            "flags_interest_female": [
-                "trait_SexualOrientation_WooHooInterests_Female",
-                "trait_SexualOrientation_WooHooInterests_Male",
-                "trait_GenderOptions_AttractedTo_Female",
-                "trait_GenderOptions_AttractedTo_Male"
-            ],
-            "flags_interest_bi": [
-                "trait_SexualOrientation_WooHooInterests_Female",
-                "trait_SexualOrientation_WooHooInterests_Male",
-                "trait_GenderOptions_AttractedTo_Female",
-                "trait_GenderOptions_AttractedTo_Male"
+                "TURBODRIVER:WickedWhims_Trait_Sex_AlwaysAccept"
             ]
         },
         "3": {
             "name": "Loved Sex NPC",
             "harmony_friendship": 100,
             "harmony_romance": 100,
-            "harmony_reduce": false,
-            "freeze_occult_motives": false,
-            "satisfaction_points": 0,
-            "add_funds": 0,
-            "max_funds": 250000,
-            "exclude_all": [
-                "unflirty", "nudityavoider", "sexuallyabstinent", "jealous"
-            ],
-            "exclude_sex_male": [],
-            "exclude_sex_female": [],
-            "exclude_interest_male": [],
-            "exclude_interest_female": [],
-            "exclude_interest_bi": [],
+            "harmony_partnership": "romance",
             "traits_all": [
-                "TURBODRIVER:WickedWhims_Trait_Exhibitionist",
-                "TURBODRIVER:WickedWhims_Trait_Sex_SexuallyAlluring",
-                "TURBODRIVER:WickedWhims_Trait_Relationships_Lustful",
                 "TURBODRIVER:WickedWhims_Trait_Sex_AlwaysAccept",
-                "trait_GreatKisser"
-            ],
-            "traits_sex_male": [],
-            "traits_sex_female": [
                 "TURBODRIVER:WickedWhims_Trait_CumSlut"
-            ],
-            "flags_interest_male": [
-                "trait_SexualOrientation_WooHooInterests_Female",
-                "trait_SexualOrientation_WooHooInterests_Male",
-                "trait_GenderOptions_AttractedTo_Female",
-                "trait_GenderOptions_AttractedTo_Male"
-            ],
-            "flags_interest_female": [
-                "trait_SexualOrientation_WooHooInterests_Female",
-                "trait_SexualOrientation_WooHooInterests_Male",
-                "trait_GenderOptions_AttractedTo_Female",
-                "trait_GenderOptions_AttractedTo_Male"
-            ],
-            "flags_interest_bi": [
-                "trait_SexualOrientation_WooHooInterests_Female",
-                "trait_SexualOrientation_WooHooInterests_Male",
-                "trait_GenderOptions_AttractedTo_Female",
-                "trait_GenderOptions_AttractedTo_Male"
             ]
         }
     }

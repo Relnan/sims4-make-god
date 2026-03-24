@@ -1,12 +1,7 @@
 {
-    "init": "Gott-Modus Initialisierung...",
-    "no_target": "Fehler: Kein Ziel-Sim gefunden.",
-    "skills_max": "Faehigkeiten maximiert.",
-    "traits_added": "Neue Traits ausgeruestet.",
-    "traits_cleaned": "Negative Traits entfernt.",
-    "master_done": "Karriere & Bestreben abgeschlossen.",
-    "harmony_done": "Haushalts-Harmonie auf 100 gesetzt.",
-    "flags_done": "Gender/Orientierungs-Flags gesetzt.",
-    "config_reloaded": "Konfiguration neu geladen!",
-    "funds_added": "Haushaltskonto maximiert."
+    "make_god_done": "Make God ausgefuehrt.",
+    "dump_created": "Dump erstellt: {path}",
+    "log_no_occult_motives": "Keine Motive in occult_motives_map fuer {occult_type} in Set {set_id} gefunden.",
+    "log_occult_frozen": "Motive fuer {sim_name} ({occult_type}) in Set {set_id} eingefroren: {count}",
+    "log_harmony_updated": "Harmonie fuer {sim_name} aktualisiert (Status: {status})."
 }
