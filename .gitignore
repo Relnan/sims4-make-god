@@ -1,5 +1,7 @@
 # Custom Ignore
 *.ts4script
+all_traits_dump.txt
+*.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

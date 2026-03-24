@@ -2,16 +2,32 @@
     "language": "de",
     "debug_log": true,
     "auto_profiles": {
-        "playable_male": "0",
-        "playable_female": "0",
-        "npc_male": "1",
-        "npc_female": "1"
+        "option_1": {
+            "playable_male": "0",
+            "playable_female": "0",
+            "npc_male": "1",
+            "npc_female": "1"
+        },
+        "option_2": {
+            "playable_male": "0",
+            "playable_female": "0",
+            "npc_male": "2",
+            "npc_female": "2"
+        },
+        "option_3": {
+            "playable_male": "0",
+            "playable_female": "0",
+            "npc_male": "3",
+            "npc_female": "3"
+        }
     },
     "sets": {
         "0": {
             "name": "Ultimate Sex God (Immortal & Nude)",
             "harmony_friendship": 100,
             "harmony_romance": 100,
+            "harmony_reduce": false,
+            "freeze_occult_motives": true,
             "satisfaction_points": 50000,
             "add_funds": 9999999,
             "max_funds": 9999999,
@@ -72,8 +88,8 @@
             ],
             "traits_sex_male": [],
             "traits_sex_female": [
-			                "TURBODRIVER:WickedWhims_Trait_Improved_Absorbency"
-			],
+                "TURBODRIVER:WickedWhims_Trait_Improved_Absorbency"
+            ],
             "flags_interest_male": [
                 "trait_SexualOrientation_WooHooInterests_Female",
                 "trait_GenderOptions_AttractedTo_Female"
@@ -90,9 +106,11 @@
             ]
         },
         "1": {
-            "name": "NPC Sex Toy (Mortal but Lustful)",
-            "harmony_friendship": 50,
+            "name": "Sex Only NPC",
+            "harmony_friendship": 0,
             "harmony_romance": 100,
+            "harmony_reduce": true,
+            "freeze_occult_motives": false,
             "satisfaction_points": 0,
             "add_funds": 0,
             "max_funds": 250000,
@@ -104,7 +122,7 @@
             "exclude_interest_male": [],
             "exclude_interest_female": [
                 "TURBODRIVER:WickedWhims_Trait_CumSlut"
-				],
+            ],
             "exclude_interest_bi": [],
             "traits_all": [
                 "TURBODRIVER:WickedWhims_Trait_Exhibitionist",
@@ -134,10 +152,57 @@
                 "trait_GenderOptions_AttractedTo_Male"
             ]
         },
-        "1": {
-            "name": "Loved NPC Sex Toy (Immortal and Lustful)",
+        "2": {
+            "name": "Comfortable Sex NPC",
             "harmony_friendship": 50,
             "harmony_romance": 100,
+            "harmony_reduce": false,
+            "freeze_occult_motives": false,
+            "satisfaction_points": 0,
+            "add_funds": 0,
+            "max_funds": 250000,
+            "exclude_all": [
+                "unflirty", "nudityavoider", "sexuallyabstinent", "jealous"
+            ],
+            "exclude_sex_male": [],
+            "exclude_sex_female": [],
+            "exclude_interest_male": [],
+            "exclude_interest_female": [],
+            "exclude_interest_bi": [],
+            "traits_all": [
+                "TURBODRIVER:WickedWhims_Trait_Exhibitionist",
+                "TURBODRIVER:WickedWhims_Trait_Sex_SexuallyAlluring",
+                "TURBODRIVER:WickedWhims_Trait_Relationships_Lustful",
+                "TURBODRIVER:WickedWhims_Trait_Sex_AlwaysAccept",
+                "trait_GreatKisser"
+            ],
+            "traits_sex_male": [],
+            "traits_sex_female": [],
+            "flags_interest_male": [
+                "trait_SexualOrientation_WooHooInterests_Female",
+                "trait_SexualOrientation_WooHooInterests_Male",
+                "trait_GenderOptions_AttractedTo_Female",
+                "trait_GenderOptions_AttractedTo_Male"
+            ],
+            "flags_interest_female": [
+                "trait_SexualOrientation_WooHooInterests_Female",
+                "trait_SexualOrientation_WooHooInterests_Male",
+                "trait_GenderOptions_AttractedTo_Female",
+                "trait_GenderOptions_AttractedTo_Male"
+            ],
+            "flags_interest_bi": [
+                "trait_SexualOrientation_WooHooInterests_Female",
+                "trait_SexualOrientation_WooHooInterests_Male",
+                "trait_GenderOptions_AttractedTo_Female",
+                "trait_GenderOptions_AttractedTo_Male"
+            ]
+        },
+        "3": {
+            "name": "Loved Sex NPC",
+            "harmony_friendship": 100,
+            "harmony_romance": 100,
+            "harmony_reduce": false,
+            "freeze_occult_motives": false,
             "satisfaction_points": 0,
             "add_funds": 0,
             "max_funds": 250000,
@@ -159,7 +224,7 @@
             "traits_sex_male": [],
             "traits_sex_female": [
                 "TURBODRIVER:WickedWhims_Trait_CumSlut"
-				],
+            ],
             "flags_interest_male": [
                 "trait_SexualOrientation_WooHooInterests_Female",
                 "trait_SexualOrientation_WooHooInterests_Male",
