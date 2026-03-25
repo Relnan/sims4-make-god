@@ -387,18 +387,160 @@ def cmd_make_god(*args, _connection=None):
                 out(f"--- Haushaltskonto um {diff} Simoleons erhoeht ---")
     except: pass
 
-@sims4.commands.Command('make_god_dump', command_type=sims4.commands.CommandType.Live)
-def cmd_make_god_dump(_connection=None):
+# ==========================================
+# DUMP FUNKTIONEN
+# ==========================================
+def _get_dump_filepath(sim_info, prefix, include_timestamp=False):
+    gender_str = str(sim_info.gender).split('.')[-1].lower()
+    occult_str = "human"
+    if hasattr(sim_info, 'occult_tracker') and sim_info.occult_tracker is not None:
+        if sim_info.occult_tracker.has_any_occult_or_part_occult_trait():
+            try:
+                occult_types = sim_info.occult_tracker.occult_types
+                if occult_types:
+                    occult_str = str(list(occult_types)[0]).split('.')[-1].lower()
+            except:
+                occult_str = "occult"
+                
+    current_file = os.path.abspath(__file__)
+    mod_folder = os.path.dirname(current_file.split('.ts4script')[0]) if '.ts4script' in current_file else os.path.dirname(current_file)
+    
+    timestamp = ""
+    if include_timestamp:
+        # Format: Jahr_Monat_Tag_Stunde_Minute
+        timestamp = "_" + datetime.now().strftime("%Y_%m_%d_%H_%M")
+    
+    filename = f"{prefix}_{gender_str}_{occult_str}_{sim_info.first_name}{timestamp}.txt"
+    return os.path.join(mod_folder, filename)
+
+@sims4.commands.Command('make_god_dump_stats', command_type=sims4.commands.CommandType.Live)
+def cmd_make_god_dump_stats(_connection=None):
+    output = sims4.commands.CheatOutput(_connection)
     client = services.client_manager().get(_connection)
+    if client is None or client.active_sim is None: return
+    
     sim_info = client.active_sim.sim_info
-    path = os.path.join(MOD_FOLDER, f"dump_{sim_info.first_name}.txt")
-    with open(path, 'w', encoding='utf-8') as f:
-        f.write(f"=== DUMP FUER {sim_info.first_name} ===\n")
-        f.write(f"Occult Type: {_get_occult_type(sim_info)}\n\n")
+    # Hier setzen wir include_timestamp=True
+    filepath = _get_dump_filepath(sim_info, "god_dump_stats", include_timestamp=True)
+    
+    try:
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(f"=== STATISTIC & COMMODITY DUMP FUER {sim_info.first_name} {sim_info.last_name} ===\n")
+            f.write("-" * 60 + "\n\n")
+            
+            stats_list = []
+            
+            # 1. Commodities (Bedürfnisse, Motives, Occult Energie)
+            if hasattr(sim_info, 'commodity_tracker') and sim_info.commodity_tracker is not None:
+                for stat in sim_info.commodity_tracker:
+                    try:
+                        stat_type = getattr(stat, 'stat_type', type(stat))
+                        stat_name = getattr(stat_type, '__name__', str(stat_type))
+                        current_value = stat.get_value()
+                        stats_list.append(f"[COMMODITY] {stat_name} : {current_value}")
+                    except: pass
+            
+            # 2. Reguläre Statistiken
+            if hasattr(sim_info, 'statistic_tracker') and sim_info.statistic_tracker is not None:
+                for stat in sim_info.statistic_tracker:
+                    try:
+                        stat_type = getattr(stat, 'stat_type', type(stat))
+                        stat_name = getattr(stat_type, '__name__', str(stat_type))
+                        current_value = stat.get_value()
+                        stats_list.append(f"[STATISTIC] {stat_name} : {current_value}")
+                    except: pass
+            
+            stats_list.sort()
+            if stats_list:
+                for line in stats_list:
+                    f.write(line + "\n")
+            else:
+                f.write("Keine Statistiken oder Commodities gefunden.\n")
+                    
+        output(f"Stats-Dump erfolgreich: {filepath}")
+    except Exception as e:
+        output(f"Fehler beim Erstellen des Stats-Dumps: {e}")
+
+@sims4.commands.Command('make_god_dump_traits', command_type=sims4.commands.CommandType.Live)
+def cmd_make_god_dump_traits(_connection=None):
+    output = sims4.commands.CheatOutput(_connection)
+    client = services.client_manager().get(_connection)
+    
+    if client is None or client.active_sim is None:
+        output("Fehler: Kein aktiver Sim gefunden.")
+        return
         
-        if hasattr(sim_info, 'trait_tracker') and sim_info.trait_tracker:
-            for trait in sim_info.trait_tracker.equipped_traits:
-                f.write(f"[TRAIT] {getattr(trait, '__name__', '')}\n")
-    sims4.commands.CheatOutput(_connection)(f"Dump erstellt: {path}")
+    sim_info = client.active_sim.sim_info
+    filepath = _get_dump_filepath(sim_info, "god_dump_traits", include_timestamp=True)
+    
+    try:
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(f"=== TRAITS DUMP FUER {sim_info.first_name} {sim_info.last_name} ===\n")
+            f.write("-" * 60 + "\n\n")
+            
+            if hasattr(sim_info, 'trait_tracker') and sim_info.trait_tracker is not None:
+                traits_list = []
+                for trait in sim_info.trait_tracker.equipped_traits:
+                    trait_name = getattr(trait, '__name__', str(trait))
+                    trait_type = str(getattr(trait, 'trait_type', 'UNKNOWN')).split('.')[-1]
+                    traits_list.append(f"[{trait_type}] {trait_name}")
+                
+                traits_list.sort()
+                for line in traits_list:
+                    f.write(line + "\n")
+            else:
+                f.write("Kein Trait-Tracker gefunden.\n")
+                    
+        output(f"Traits-Dump erfolgreich: {filepath}")
+    except Exception as e:
+        output(f"Fehler beim Erstellen des Traits-Dumps: {e}")
+
+@sims4.commands.Command('make_god_dump_all_game_traits', command_type=sims4.commands.CommandType.Live)
+def cmd_make_god_dump_all_game_traits(_connection=None):
+    output = sims4.commands.CheatOutput(_connection)
+    # Greift auf den globalen Manager für alle Traits im Spiel zu
+    trait_manager = services.get_instance_manager(sims4.resources.Types.TRAIT)
+
+    # Nutzt denselben zentralen Helper wie die anderen Dump-Funktionen
+    # und erzeugt bewusst keinen Zeitstempel.
+    client = services.client_manager().get(_connection)
+    if client is None or client.active_sim is None:
+        output("Fehler: Kein aktiver Sim gefunden.")
+        return
+
+    sim_info = client.active_sim.sim_info
+    filepath = _get_dump_filepath(sim_info, "god_dump_GLOBAL_ALL_TRAITS", include_timestamp=False)
+    
+    try:
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write("=== GLOBALER DUMP: ALLE IM SPIEL GEFUNDENEN TRAITS ===\n")
+            f.write("Nutzbar für deine 'traits_all' oder 'exclude' Listen\n")
+            f.write("-" * 60 + "\n\n")
+            
+            all_traits = []
+            for trait in tuple(trait_manager.types.values()):
+                try:
+                    t_name = getattr(trait, '__name__', str(trait))
+                    # Bestimmt den Typ (PERSONALITY, GAMEPLAY, HIDDEN etc.)
+                    t_type = str(getattr(trait, 'trait_type', 'UNKNOWN')).split('.')[-1]
+                    all_traits.append(f"[{t_type}] {t_name}")
+                except: pass
+            
+            all_traits.sort()
+            for line in all_traits:
+                f.write(line + "\n")
+                
+        output(f"Globaler Trait-Dump erfolgreich! Datei: {filepath}")
+    except Exception as e:
+        output(f"Fehler beim globalen Dump: {e}")
+
+@sims4.commands.Command('make_god_dump', command_type=sims4.commands.CommandType.Live)
+def cmd_make_god_dump_all(_connection=None):
+    output = sims4.commands.CheatOutput(_connection)
+    output("Starte vollstaendigen Dump (Stats & Traits)...")
+    cmd_make_god_dump_stats(_connection)
+    cmd_make_god_dump_traits(_connection)
+    cmd_make_god_dump_all_game_traits(_connection)
+    output("Vollstaendiger Dump abgeschlossen! Siehe Mod-Ordner.")
 
 load_config()
