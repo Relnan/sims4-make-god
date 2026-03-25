@@ -1,176 +1,201 @@
 {
-    "_description": "Globale Mod-Einstellungen",
     "language": "de",
     "debug_log": true,
-
     "auto_profiles": {
-        "option_1": { "playable_male": "0", "playable_female": "0", "npc_male": "1", "npc_female": "1" },
-        "option_2": { "playable_male": "0", "playable_female": "0", "npc_male": "2", "npc_female": "2" },
-        "option_3": { "playable_male": "0", "playable_female": "0", "npc_male": "3", "npc_female": "3" }
-    },
-
-    "sets": {
-        "0": {
-            "_description": "Vollwertiger Gott-Modus fuer den eigenen Haushalt. Beinhaltet alle Nuetzlichkeits-, Wetter- und Unsterblichkeits-Perks.",
-            "name": "Ultimate Household Deity",
-            "harmony_friendship": 100,
-            "harmony_romance": 100,
-            "harmony_partnership": "marriage",
-            "satisfaction_points": 250000,
-            "add_funds": 1000000,
-            "max_funds": 9999999,
-            "exclude_all": ["evil", "lazy", "mean", "gloomy", "hotheaded", "jealous", "slob", "clumsy", "snob", "erratic", "squeamish", "unflirty"],
-            "traits_sex_male": [],
-            "traits_sex_female": [
-                "trait_Fertile",
-                "TURBODRIVER:WickedWhims_Trait_Menstruation_ExtraAbsorbency"
-            ],
-            "traits_all": [
-                "TURBODRIVER:WickedWhims_Trait_AgelessSim_Hidden",
-                "TURBODRIVER:WickedWhims_Trait_Sex_AlwaysAccept",
-                "TURBODRIVER:WickedWhims_Trait_Sex_SexuallyAlluring",
-                "TURBODRIVER:WickedWhims_Trait_Sex_Attribute_SexuallyAdventurous",
-                "TURBODRIVER:WickedWhims_Trait_Attractiveness_UniqueAppearance",
-                "TURBODRIVER:WickedWhims_Trait_Exhibitionist",
-                "TURBODRIVER:WickedWhims_Trait_Sweating_NoSweat",
-                "TURBODRIVER:WickedWhims_Trait_STD_Crabs_Immunity",
-                "TURBODRIVER:WickedWhims_Trait_STD_BurningBladder_Immunity",
-                
-                "trait_Hidden_IsImmortal",
-                "trait_Longevity",
-                "trait_Brave",
-                "trait_NeedsNoOne",
-                
-                "trait_ForeverFresh",
-                "trait_ForeverFull",
-                "trait_NeverWeary",
-                "trait_SteelBladder",
-                "trait_HardlyHungry",
-                "trait_Antiseptic",
-                "trait_Independent",
-                
-                "trait_IceMan",
-                "trait_BurningMan",
-                "trait_HeatAcclimation",
-                "trait_ColdAcclimation",
-                "trait_Stormchaser",
-                "trait_Waterproof",
-                
-                "trait_Savant",
-                "trait_SpeedReader",
-                "trait_MorningPerson",
-                "trait_NightOwl",
-                "trait_Quick_Learner",
-                "trait_Mentor",
-                "trait_SpeedCleaner",
-                
-                "trait_AlwaysWelcome",
-                "trait_IncrediblyFriendly",
-                "trait_Player",
-                "trait_GreatKisser",
-                "trait_Alluring",
-                "trait_Beguiling",
-                "trait_Shameless",
-                "trait_Memorable",
-                "trait_Gregarious",
-                "trait_Legendary",
-                
-                "trait_FreeServices",
-                "trait_Frugal",
-                "trait_Marketable",
-                "trait_CreativeVisionary",
-                "trait_Entrepreneurial",
-                "trait_ProfessionalSlacker",
-                "trait_Connections",
-                "trait_Business_Savvy",
-                
-                "trait_SuperGreenThumb",
-                "trait_GymRat",
-                "trait_Carefree",
-                "trait_LaughProof",
-                "trait_EssenceOfFlavor"
-            ],
-            "occult_settings": {
-                "human": { "freeze_motives": true, "traits": [], "exclude": [] },
-                "vampire": { "freeze_motives": true, "traits": ["trait_OccultVampire_Manifested"], "exclude": ["trait_LovesTheSun", "trait_Vampire_Sunlight_Level3"] },
-                "witch": { "freeze_motives": true, "traits": ["trait_OccultWitch_Manifested"], "exclude": [] }
-            }
+        "option_1": {
+            "playable_male": "0",
+            "playable_female": "0",
+            "npc_male": "1",
+            "npc_female": "1"
         },
-
-        "1": {
-            "_description": "Leichtes Upgrade fuer NPCs",
-            "name": "NPC Casual Sex",
-            "harmony_friendship": 0,
-            "harmony_romance": 100,
-            "harmony_partnership": "none",
-            "satisfaction_points": 0,
-            "add_funds": 0,
-            "exclude_all": ["evil", "lazy", "mean", "gloomy", "hotheaded", "jealous", "slob", "clumsy", "snob", "erratic", "squeamish", "unflirty"],
-            "traits_sex_male": [],
-            "traits_sex_female": [],
-            "traits_all": [
-                "TURBODRIVER:WickedWhims_Trait_Sex_AlwaysAccept",
-                "TURBODRIVER:WickedWhims_Trait_Sex_SexuallyAlluring"
-            ]
+        "option_2": {
+            "playable_male": "0",
+            "playable_female": "0",
+            "npc_male": "1",
+            "npc_female": "1"
         },
-
-        "2": {
-            "_description": "Mittleres Upgrade fuer NPCs (Nicht alternd, Freunde)",
-            "name": "NPC Liked Sex (Ageless)",
-            "harmony_friendship": 50,
-            "harmony_romance": 100,
-            "harmony_partnership": "friends",
-            "satisfaction_points": 0,
-            "add_funds": 0,
-            "exclude_all": ["evil", "lazy", "mean", "gloomy", "hotheaded", "jealous", "slob", "clumsy", "snob", "erratic", "squeamish", "unflirty"],
-            "traits_sex_male": [],
-            "traits_sex_female": [
-                "trait_Fertile",
-                "TURBODRIVER:WickedWhims_Trait_Menstruation_ExtraAbsorbency"
-            ],
-            "traits_all": [
-                "TURBODRIVER:WickedWhims_Trait_Sex_AlwaysAccept",
-                "TURBODRIVER:WickedWhims_Trait_AgelessSim_Hidden",
-                "TURBODRIVER:WickedWhims_Trait_Sex_SexuallyAlluring",
-                "TURBODRIVER:WickedWhims_Trait_Attractiveness_UniqueAppearance",
-                "TURBODRIVER:WickedWhims_Trait_STD_Crabs_Immunity",
-                "TURBODRIVER:WickedWhims_Trait_STD_BurningBladder_Immunity"
-            ]
-        },
-
-        "3": {
-            "_description": "Maximales Upgrade fuer NPCs (Unsterblich, Feste Partner)",
-            "name": "NPC Favorite Sex (Immortal)",
-            "harmony_friendship": 100,
-            "harmony_romance": 100,
-            "harmony_partnership": "romance",
-            "satisfaction_points": 0,
-            "add_funds": 0,
-            "exclude_all": ["evil", "lazy", "mean", "gloomy", "hotheaded", "jealous", "slob", "clumsy", "snob", "erratic", "squeamish", "unflirty"],
-            "traits_sex_male": [],
-            "traits_sex_female": [
-                "trait_Fertile",
-                "TURBODRIVER:WickedWhims_Trait_Menstruation_ExtraAbsorbency"
-            ],
-            "traits_all": [
-                "TURBODRIVER:WickedWhims_Trait_Sex_AlwaysAccept",
-                "TURBODRIVER:WickedWhims_Trait_AgelessSim_Hidden",
-                "TURBODRIVER:WickedWhims_Trait_Sex_SexuallyAlluring",
-                "TURBODRIVER:WickedWhims_Trait_Attractiveness_UniqueAppearance",
-                "TURBODRIVER:WickedWhims_Trait_STD_Crabs_Immunity",
-                "TURBODRIVER:WickedWhims_Trait_STD_BurningBladder_Immunity",
-                "trait_Hidden_IsImmortal"
-            ]
+        "option_3": {
+            "playable_male": "0",
+            "playable_female": "0",
+            "npc_male": "1",
+            "npc_female": "1"
         }
     },
-
-    "_description_motives": "Legt fest, welche Beduerfnisse bei freeze_motives=true pro Spezies maximiert und eingefroren werden.",
-    "occult_motives_map": {
-        "human": ["motive_hunger", "motive_energy", "motive_hygiene", "motive_bladder", "motive_fun", "motive_social"],
-        "vampire": ["commodity_motive_vampire_energy", "commodity_motive_vampire_thirst"],
-        "witch": ["commodity_motive_witchoccult_charge"],
-        "alien": ["motive_hunger", "motive_energy", "motive_hygiene", "motive_bladder", "motive_fun", "motive_social", "commodity_alienmotive_brainpower"],
-        "mermaid": ["motive_hunger", "motive_energy", "motive_hygiene", "motive_bladder", "motive_fun", "motive_social", "commodity_motive_water"],
-        "werewolf": ["motive_hunger", "motive_energy", "motive_hygiene", "motive_bladder", "motive_fun", "motive_social", "commodity_motive_werewolf_fury"]
+    "sets": {
+        "0": {
+            "name": "Ultimate Sex God (Immortal & Nude)",
+            "harmony_friendship": 100,
+            "harmony_romance": 100,
+            "satisfaction_points": 50000,
+            "add_funds": 9999999,
+            "max_funds": 9999999,
+            "luck": {
+                "value":100,
+                "_value":"-100 - 100",
+                "locked":true
+            },
+            "exclude_all": [
+                "evil", "lazy", "mean", "gloomy", "hotheaded", "jealous", "slob", "clumsy", 
+                "snob", "erratic", "unflirty", "squeamish", "nudityavoider", "sexuallyabstinent", 
+                "asocial", "shy"
+            ],
+            "exclude_sex_male": [],
+            "exclude_sex_female": [],
+            "exclude_interest_male": [],
+            "exclude_interest_female": [],
+            "exclude_interest_bi": [],
+            "traits_all": [
+                "trait_Longevity",
+                "TURBODRIVER:WickedWhims_Trait_AgelessSim_Hidden",
+                "trait_MTS_Deaderpool_McCommander_ImmortalFlag",
+                "trait_MTS_Deaderpool_McCommander_NoAgeFlag",
+                "trait_MTS_Deaderpool_McCommander_NoCullFlag",
+                
+                "TURBODRIVER:WickedWhims_Trait_Exhibitionist",
+                "TURBODRIVER:WickedWhims_Trait_Nudity_NoSweat_Reward",
+                "TURBODRIVER:WickedWhims_Trait_NudityAspiration_Bonus",
+                "TURBODRIVER:WickedWhims_Trait_Nudity_NudistLeaderAspiration",
+                "TURBODRIVER:WickedWhims_Trait_NudityEnthusiast",
+                "TURBODRIVER:WickedWhims_Trait_Nudity_NoUnderwear",
+                
+                "TURBODRIVER:WickedWhims_Trait_Sex_SexuallyAlluring",
+                "TURBODRIVER:WickedWhims_Trait_Relationships_Lustful",
+                "TURBODRIVER:WickedWhims_Trait_Relationships_Poly",
+                "TURBODRIVER:WickedWhims_Trait_Sex_AlwaysAccept",
+                
+                "trait_Alluring",
+                "trait_Beguiling",
+                "trait_GreatKisser",
+                "trait_Player",
+                "Deaderpool_MCCC_Trait_FlagNoJealousy",
+                "Deaderpool_MCCC_Trait_FlagMultiSpouse",
+                
+                "TURBODRIVER:WickedWhims_Trait_Attractiveness_Reward_UniqueLooks",
+                "TURBODRIVER:WickedWhims_Trait_BodyHair_STD_NoCrabs",
+                "trait_SicknessImmunity",
+                
+                "trait_Brave",
+                "trait_Carefree",
+                "trait_ForeverFresh",
+                "trait_ForeverFull",
+                "trait_HardlyHungry",
+                "trait_Independent",
+                "trait_NeverWeary",
+                "trait_PerfectHost",
+                "trait_Savant",
+                "trait_SeldomSleepy",
+                "trait_Shameless",
+                "trait_SteelBladder",
+                "trait_Antiseptic"
+            ],
+            "traits_sex_male": [],
+            "traits_sex_female": [
+                "TURBODRIVER:WickedWhims_Trait_Improved_Absorbency"
+            ],
+            "flags_interest_male": [
+                "trait_SexualOrientation_WooHooInterests_Female",
+                "trait_GenderOptions_AttractedTo_Female"
+            ],
+            "flags_interest_female": [
+                "trait_SexualOrientation_WooHooInterests_Male",
+                "trait_GenderOptions_AttractedTo_Male"
+            ],
+            "flags_interest_bi": [
+                "trait_SexualOrientation_WooHooInterests_Female",
+                "trait_SexualOrientation_WooHooInterests_Male",
+                "trait_GenderOptions_AttractedTo_Female",
+                "trait_GenderOptions_AttractedTo_Male"
+            ]
+        },
+        "1": {
+            "name": "NPC Sex Toy (Mortal but Lustful)",
+            "harmony_friendship": 50,
+            "harmony_romance": 100,
+            "satisfaction_points": 0,
+            "add_funds": 0,
+            "max_funds": 250000,
+            "exclude_all": [
+                "unflirty", "nudityavoider", "sexuallyabstinent", "jealous"
+            ],
+            "exclude_sex_male": [],
+            "exclude_sex_female": [],
+            "exclude_interest_male": [],
+            "exclude_interest_female": [
+                "TURBODRIVER:WickedWhims_Trait_CumSlut"
+            ],
+            "exclude_interest_bi": [],
+            "traits_all": [
+                "TURBODRIVER:WickedWhims_Trait_Exhibitionist",
+                "TURBODRIVER:WickedWhims_Trait_Sex_SexuallyAlluring",
+                "TURBODRIVER:WickedWhims_Trait_Relationships_Lustful",
+                "TURBODRIVER:WickedWhims_Trait_Sex_AlwaysAccept",
+                "trait_GreatKisser"
+            ],
+            "traits_sex_male": [],
+            "traits_sex_female": [],
+            "flags_interest_male": [
+                "trait_SexualOrientation_WooHooInterests_Female",
+                "trait_SexualOrientation_WooHooInterests_Male",
+                "trait_GenderOptions_AttractedTo_Female",
+                "trait_GenderOptions_AttractedTo_Male"
+            ],
+            "flags_interest_female": [
+                "trait_SexualOrientation_WooHooInterests_Female",
+                "trait_SexualOrientation_WooHooInterests_Male",
+                "trait_GenderOptions_AttractedTo_Female",
+                "trait_GenderOptions_AttractedTo_Male"
+            ],
+            "flags_interest_bi": [
+                "trait_SexualOrientation_WooHooInterests_Female",
+                "trait_SexualOrientation_WooHooInterests_Male",
+                "trait_GenderOptions_AttractedTo_Female",
+                "trait_GenderOptions_AttractedTo_Male"
+            ]
+        },
+        "2": {
+            "name": "Loved NPC Sex Toy (Immortal and Lustful)",
+            "harmony_friendship": 50,
+            "harmony_romance": 100,
+            "satisfaction_points": 0,
+            "add_funds": 0,
+            "max_funds": 250000,
+            "exclude_all": [
+                "unflirty", "nudityavoider", "sexuallyabstinent", "jealous"
+            ],
+            "exclude_sex_male": [],
+            "exclude_sex_female": [],
+            "exclude_interest_male": [],
+            "exclude_interest_female": [],
+            "exclude_interest_bi": [],
+            "traits_all": [
+                "TURBODRIVER:WickedWhims_Trait_Exhibitionist",
+                "TURBODRIVER:WickedWhims_Trait_Sex_SexuallyAlluring",
+                "TURBODRIVER:WickedWhims_Trait_Relationships_Lustful",
+                "TURBODRIVER:WickedWhims_Trait_Sex_AlwaysAccept",
+                "trait_GreatKisser"
+            ],
+            "traits_sex_male": [],
+            "traits_sex_female": [
+                "TURBODRIVER:WickedWhims_Trait_CumSlut"
+            ],
+            "flags_interest_male": [
+                "trait_SexualOrientation_WooHooInterests_Female",
+                "trait_SexualOrientation_WooHooInterests_Male",
+                "trait_GenderOptions_AttractedTo_Female",
+                "trait_GenderOptions_AttractedTo_Male"
+            ],
+            "flags_interest_female": [
+                "trait_SexualOrientation_WooHooInterests_Female",
+                "trait_SexualOrientation_WooHooInterests_Male",
+                "trait_GenderOptions_AttractedTo_Female",
+                "trait_GenderOptions_AttractedTo_Male"
+            ],
+            "flags_interest_bi": [
+                "trait_SexualOrientation_WooHooInterests_Female",
+                "trait_SexualOrientation_WooHooInterests_Male",
+                "trait_GenderOptions_AttractedTo_Female",
+                "trait_GenderOptions_AttractedTo_Male"
+            ]
+        }
     }
 }

@@ -51,12 +51,15 @@ copy /Y "make_god.ts4script" "%MOD_DEST%\make_god.ts4script" >nul
 
 if exist "*.json" copy /Y "*.json" "%MOD_DEST%\" >nul
 if exist "locales\" xcopy /E /I /Y "locales" "%MOD_DEST%\locales\" >nul
+if exist "Relnan_MakeGod_UI.package" copy /Y "Relnan_MakeGod_UI.package" "%MOD_DEST%\Relnan_MakeGod_UI.package" >nul
 
 :: [6] Aufräumen
 if exist "make_god.pyc" del "make_god.pyc"
 
 echo [+] Build abgeschlossen.
 echo.
+echo weiter mit Tastendruck... (Sims 4 wird gleich gestartet)
+pause
 
 :: --- PERFORMANCE OPTIMIERUNG & SPIELSTART ---
 
