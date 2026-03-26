@@ -1,7 +1,0 @@
-{
-    "make_god_done": "Make God executed.",
-    "dump_created": "Dump created: {path}",
-    "log_no_occult_motives": "No motives found in occult_motives_map for {occult_type} in set {set_id}.",
-    "log_occult_frozen": "Motives frozen for {sim_name} ({occult_type}) in set {set_id}: {count}",
-    "log_harmony_updated": "Harmony updated for {sim_name} (status: {status})."
-}
