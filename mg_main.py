@@ -1,11 +1,21 @@
 import sims4.commands
 import services
+import re
 
 import mg_config
 import mg_logger
 import mg_utils
 import mg_queue
 import mg_dump
+
+# Erlaubt benutzerfreundliche Eingaben wie option1/option_1/opt1
+# und skaliert fuer beliebige Nummern (z.B. option_12).
+def _normalize_selector(value):
+    raw = str(value).lower().strip()
+    m = re.match(r'^(?:option_?|opt)(\d+)$', raw)
+    if m:
+        return f"option_{m.group(1)}"
+    return raw
 
 # Initiales Laden beim Import
 mg_config.load_config()
@@ -27,13 +37,13 @@ def cmd_rmg_base(*args, _connection=None):
     # --- BEFEHLSREFERENZ / HILFEMENÜ ---
     if not args_list:
         out("=== Relnans Make God (RMG) - Befehlsreferenz ===")
-        out("Nutzung: rmg [Modus] [Set_ID oder auto] [debug]")
+        out("Nutzung: rmg [Modus] [Set_ID|auto|option_X] [debug]")
         out(" ")
         out("Verfuegbare Shortcuts:")
-        out("- rmg.all [Set_ID]    -> Wendet das Set auf den ganzen Haushalt an.")
-        out("- rmg.active [Set_ID] -> Wendet das Set nur auf den aktiven Sim an.")
-        out("- rmg.id <ID> [Set_ID]-> Wendet das Set auf den Sim mit der ID an.")
-        out("- rmg.name \"Name\" [Set]-> Wendet das Set auf den gesuchten Sim an.")
+        out("- rmg.all [Set_ID|auto|option_X]    -> Auf den ganzen Haushalt.")
+        out("- rmg.active [Set_ID|auto|option_X] -> Nur auf den aktiven Sim.")
+        out("- rmg.id <ID> [Set_ID|auto|option_X]-> Auf Sim mit der ID.")
+        out("- rmg.name \"Name\" [Set|auto|option_X]-> Auf gefundenen Sim.")
         out("- rmg.dump            -> Erstellt einen Textdatei-Dump (aktiver Sim).")
         out("- rmg.dump all        -> Erstellt einen Dump fuer den ganzen Haushalt.")
         out(" ")
@@ -74,26 +84,44 @@ def cmd_rmg_base(*args, _connection=None):
         
     if mode == 'all':
         targets = list(active_household)
-        if len(args_list) > 1: set_id = str(args_list[1])
+        if len(args_list) > 1: set_id = _normalize_selector(args_list[1])
     elif mode == 'active':
         if active_sim_info: targets = [active_sim_info]
-        if len(args_list) > 1: set_id = str(args_list[1])
+        if len(args_list) > 1: set_id = _normalize_selector(args_list[1])
     elif mode == 'id':
         if len(args_list) > 1:
             try:
                 found_sim = mg_utils.get_sim_by_id(int(args_list[1]))
                 if found_sim: targets = [found_sim]
             except: pass
-        if len(args_list) > 2: set_id = str(args_list[2])
+        if len(args_list) > 2: set_id = _normalize_selector(args_list[2])
     elif mode == 'name':
         if len(args_list) > 1:
             matches = mg_utils.get_sims_by_name(args_list[1], active_household)
-            if len(matches) == 1: targets = matches
-        if len(args_list) > 2: set_id = str(args_list[2])
+            if len(matches) == 1:
+                targets = matches
+            elif len(matches) > 1:
+                out(f"[FEHLER] Mehrdeutiger Name: {len(matches)} Sims gefunden fuer '{args_list[1]}'.")
+                out("Trefferliste:")
+
+                max_lines = 20
+                for i, sim in enumerate(matches[:max_lines], start=1):
+                    sim_id = getattr(sim, 'sim_id', 'unbekannt')
+                    first = getattr(sim, 'first_name', '')
+                    last = getattr(sim, 'last_name', '')
+                    label = "Haushalt" if (active_household and sim in active_household) else "NPC"
+                    out(f"{i}. {first} {last} | ID: {sim_id} | {label}")
+
+                if len(matches) > max_lines:
+                    out(f"... und {len(matches) - max_lines} weitere Treffer.")
+
+                out("Bitte nutze rmg.id <SimID> oder gib einen genaueren Namen an.")
+                return
+        if len(args_list) > 2: set_id = _normalize_selector(args_list[2])
     else:
         # Fallback: Wenn jemand z.B. nur "rmg 0" oder "rmg auto" eintippt
         targets = list(active_household)
-        set_id = str(args_list[0])
+        set_id = _normalize_selector(args_list[0])
 
     if not targets:
         out("[FEHLER] Keine passenden Sims gefunden.")

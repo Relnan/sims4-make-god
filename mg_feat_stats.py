@@ -19,8 +19,9 @@ def apply_stats(sim_info, set_id, out, force_debug):
     luck_data = active_set.get("luck", {})
     luck_val = luck_data.get("value", 0)
     luck_locked = luck_data.get("locked", False)
+    allow_all_skills = active_set.get("allow_all_skills", False)
     
-    do_max_skills = active_set.get("max_player_skills", True) if is_player else active_set.get("max_npc_skills", False)
+    do_max_skills = allow_all_skills or (active_set.get("max_player_skills", True) if is_player else active_set.get("max_npc_skills", False))
     
     # --- NEU: SKILL-ERLAUBNIS ODER FALLBACK LADEN ---
     allowed_skills = [s.lower() for s in active_set.get("allowed_skills", [])]
@@ -43,7 +44,7 @@ def apply_stats(sim_info, set_id, out, force_debug):
             # --- SKILLS MAXIMIEREN ---
             if do_max_skills and hasattr(stat_type, 'is_skill') and stat_type.is_skill:
                 # Pruefe, ob der Skill_Name in unserer Fallback- oder Set-Liste auftaucht
-                if allowed_skills and any(allowed in stat_name for allowed in allowed_skills):
+                if allow_all_skills or (allowed_skills and any(allowed in stat_name for allowed in allowed_skills)):
                     tracker = sim_info.get_tracker(stat_type)
                     if tracker:
                         try:
