@@ -3,7 +3,11 @@
 Willkommen bei **MakeGod**\! Dies ist nicht einfach nur eine weitere Cheat-Mod – es ist ein extrem mächtiges, blitzschnelles und hochgradig anpassbares Werkzeug, um das Leben deiner Sims mit nur einem einzigen Klick komplett zu perfektionieren (oder zu ruinieren, je nachdem, was du in der Konfiguration einstellst\!).  
 Egal, ob du einen unsterblichen Super-Vampir, ein absolutes Wunderkind oder einfach nur den perfekten Nachbarn erschaffen willst: MakeGod erledigt in einem Bruchteil einer Sekunde das, wofür du sonst stundenlang Cheats eintippen müsstest.
 
+Der Mod ist ein Hobby Projekt zumm Kennenlernen der Modding Funktionalität, und ich übernehme keine Gewähr auf vollständigkeit.
+
 Aktuell ist die Menü Integration noch nicht funktionsfähig.
+
+** INFO: Der Mod wurde fast ausschließlich mit Unterstützung von KI (Gemini) erstellt **
 
 ## **📥 Installation**
 
