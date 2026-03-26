@@ -8,7 +8,6 @@ import mg_utils
 import mg_logger
 
 def _get_dump_filepath(sim_info, prefix):
-    """Erstellt einen sauberen Dateinamen fuer den Dump."""
     gender_str = str(sim_info.gender).split('.')[-1].lower()
     occult_str = mg_utils.get_occult_type(sim_info)
     timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
@@ -16,14 +15,11 @@ def _get_dump_filepath(sim_info, prefix):
     return os.path.join(mg_config.MOD_FOLDER, filename)
 
 def execute_dump(sim_info, out):
-    """Liest alle Traits, Commodities und Skills aus und speichert sie."""
     if not sim_info: return
-    
     mg_logger.log(f"Starte Dump fuer {sim_info.first_name} {sim_info.last_name}...", is_debug=False, out=out)
     
-    # 1. Stats & Commodities Dump
     try:
-        stats_path = _get_dump_filepath(sim_info, "god_dump_stats")
+        stats_path = _get_dump_filepath(sim_info, "rmg_dump_stats")
         with open(stats_path, 'w', encoding='utf-8') as f:
             f.write(f"=== STATISTIC & COMMODITY DUMP FUER {sim_info.first_name} {sim_info.last_name} ===\n")
             f.write("-" * 60 + "\n\n")
@@ -51,9 +47,8 @@ def execute_dump(sim_info, out):
     except Exception as e:
         mg_logger.log(f"[FEHLER] Stats-Dump fehlgeschlagen: {e}", is_debug=False, out=out)
 
-    # 2. Traits Dump
     try:
-        traits_path = _get_dump_filepath(sim_info, "god_dump_traits")
+        traits_path = _get_dump_filepath(sim_info, "rmg_dump_traits")
         with open(traits_path, 'w', encoding='utf-8') as f:
             f.write(f"=== TRAITS DUMP FUER {sim_info.first_name} {sim_info.last_name} ===\n")
             f.write("-" * 60 + "\n\n")
@@ -70,9 +65,8 @@ def execute_dump(sim_info, out):
     except Exception as e:
         mg_logger.log(f"[FEHLER] Traits-Dump fehlgeschlagen: {e}", is_debug=False, out=out)
 
-    # 3. NEU: Skills Dump (Gibt ALLE verfuegbaren Skills der Engine aus)
     try:
-        skills_path = _get_dump_filepath(sim_info, "god_dump_skills")
+        skills_path = _get_dump_filepath(sim_info, "rmg_dump_skills")
         with open(skills_path, 'w', encoding='utf-8') as f:
             f.write(f"=== ALLE SKILLS DER ENGINE ===\n")
             f.write(f"Werte in Klammern = Aktuelles Level von {sim_info.first_name}\n")
@@ -90,10 +84,8 @@ def execute_dump(sim_info, out):
                         if tracker:
                             stat_inst = tracker.get_statistic(stat_type)
                             if stat_inst:
-                                try:
-                                    current_val = int(stat_inst.get_value())
-                                except:
-                                    pass
+                                try: current_val = int(stat_inst.get_value())
+                                except: pass
                                 
                         s_list.append(f"[Level {current_val:02d}] {s_name}")
                 
@@ -103,12 +95,9 @@ def execute_dump(sim_info, out):
     except Exception as e:
         mg_logger.log(f"[FEHLER] Skills-Dump fehlgeschlagen: {e}", is_debug=False, out=out)
 
-@sims4.commands.Command('make_god_dump', command_type=sims4.commands.CommandType.Live)
-def cmd_make_god_dump(*args, _connection=None):
-    """
-    Erstellt Dumps fuer Sims.
-    Nutzung: make_god_dump [active | all | id <SimID>]
-    """
+# --- NEU: rmg.dump ALS ALIAS ---
+@sims4.commands.Command('rmg.dump', 'make_god_dump', command_type=sims4.commands.CommandType.Live)
+def cmd_rmg_dump(*args, _connection=None):
     out = sims4.commands.CheatOutput(_connection)
     client = services.client_manager().get(_connection)
     if not client: return

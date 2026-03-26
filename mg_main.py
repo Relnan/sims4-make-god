@@ -10,11 +10,11 @@ import mg_dump
 # Initiales Laden beim Import
 mg_config.load_config()
 
-@sims4.commands.Command('make_god', command_type=sims4.commands.CommandType.Live)
-def cmd_make_god(*args, _connection=None):
+# --- HAUPT-ROUTING (Akzeptiert nun 'rmg' und 'make_god' als Befehl) ---
+@sims4.commands.Command('rmg', 'make_god', command_type=sims4.commands.CommandType.Live)
+def cmd_rmg_base(*args, _connection=None):
     out = sims4.commands.CheatOutput(_connection)
     
-    # 1. WICHTIG: Cheats aktivieren, sonst funktionieren Trait/Punkt-Zuweisungen nicht!
     try: sims4.commands.cheats_enabled = True
     except: pass
     
@@ -22,8 +22,29 @@ def cmd_make_god(*args, _connection=None):
     client = services.client_manager().get(_connection)
     if not client: return
     
-    # 2. DEBUG ARGUMENT AUSWERTEN
     args_list = [str(a).lower() for a in args]
+    
+    # --- BEFEHLSREFERENZ / HILFEMENÜ ---
+    if not args_list:
+        out("=== Relnans Make God (RMG) - Befehlsreferenz ===")
+        out("Nutzung: rmg [Modus] [Set_ID oder auto] [debug]")
+        out(" ")
+        out("Verfuegbare Shortcuts:")
+        out("- rmg.all [Set_ID]    -> Wendet das Set auf den ganzen Haushalt an.")
+        out("- rmg.active [Set_ID] -> Wendet das Set nur auf den aktiven Sim an.")
+        out("- rmg.id <ID> [Set_ID]-> Wendet das Set auf den Sim mit der ID an.")
+        out("- rmg.name \"Name\" [Set]-> Wendet das Set auf den gesuchten Sim an.")
+        out("- rmg.dump            -> Erstellt einen Textdatei-Dump (aktiver Sim).")
+        out("- rmg.dump all        -> Erstellt einen Dump fuer den ganzen Haushalt.")
+        out(" ")
+        out("Beispiele:")
+        out("rmg.all auto       -> Smarte Zuweisung (Kinder kriegen Kinder-Set etc.)")
+        out("rmg.all 1          -> Erzwingt Set 1 fuer ALLE im Haushalt.")
+        out("rmg.active 0 debug -> Set 0 auf aktiven Sim mit genauen Logs.")
+        out("rmg auto           -> Kurzbefehl fuer 'rmg all auto'.")
+        out("==================================================")
+        return
+        
     force_debug = False
     if 'debug' in args_list:
         force_debug = True
@@ -36,7 +57,6 @@ def cmd_make_god(*args, _connection=None):
         out("[FEHLER] Kein aktiver Haushalt.")
         return
         
-    # Babys filtern
     active_household = []
     for sim in active_household_raw:
         try:
@@ -46,7 +66,7 @@ def cmd_make_god(*args, _connection=None):
             active_household.append(sim)
             
     targets = []
-    set_id = '0'
+    set_id = 'auto'
     mode = 'all'
 
     if args_list:
@@ -71,6 +91,7 @@ def cmd_make_god(*args, _connection=None):
             if len(matches) == 1: targets = matches
         if len(args_list) > 2: set_id = str(args_list[2])
     else:
+        # Fallback: Wenn jemand z.B. nur "rmg 0" oder "rmg auto" eintippt
         targets = list(active_household)
         set_id = str(args_list[0])
 
@@ -79,24 +100,56 @@ def cmd_make_god(*args, _connection=None):
         return
 
     out(f"Sende {len(targets)} Sim(s) an die Queue fuer Set '{set_id}'...")
-    
-    # WICHTIG: Wir uebergeben out, force_debug UND _connection!
     mg_queue.start_queue(targets, set_id, active_household, out, force_debug, _connection)
 
 
+# --- DIREKTE SHORTCUTS (rmg.all, rmg.active etc.) ---
+@sims4.commands.Command('rmg.all', command_type=sims4.commands.CommandType.Live)
+def cmd_rmg_all(*args, _connection=None):
+    cmd_rmg_base('all', *args, _connection=_connection)
+
+@sims4.commands.Command('rmg.active', command_type=sims4.commands.CommandType.Live)
+def cmd_rmg_active(*args, _connection=None):
+    cmd_rmg_base('active', *args, _connection=_connection)
+
+@sims4.commands.Command('rmg.id', command_type=sims4.commands.CommandType.Live)
+def cmd_rmg_id(*args, _connection=None):
+    cmd_rmg_base('id', *args, _connection=_connection)
+
+@sims4.commands.Command('rmg.name', command_type=sims4.commands.CommandType.Live)
+def cmd_rmg_name(*args, _connection=None):
+    cmd_rmg_base('name', *args, _connection=_connection)
+
+
 # --- DIE UI-BRIDGE (PICKER-MENU) ---
-@sims4.commands.Command('make_god_ui_trigger', command_type=sims4.commands.CommandType.Live)
-def cmd_make_god_ui_trigger(sim_id: int, option_key: str, _connection=None):
+@sims4.commands.Command('make_god_ui_trigger', 'rmg.ui_trigger', command_type=sims4.commands.CommandType.Live)
+def cmd_rmg_ui_trigger(sim_id=None, option_key='option_1', _connection=None):
     out = sims4.commands.CheatOutput(_connection)
     try: sims4.commands.cheats_enabled = True
     except: pass
     
     mg_config.load_config()
-    target_sim = mg_utils.get_sim_by_id(sim_id)
-    if not target_sim: return
+    
+    # 1. Sicherer Cast der ID (EA uebergibt oft Hex-Strings statt int)
+    try:
+        parsed_id = int(str(sim_id), 0)
+    except Exception as e:
+        mg_logger.log(f"[FEHLER] UI-Trigger: Konnte Sim-ID ({sim_id}) nicht lesen. {e}", is_debug=False, out=out)
+        return
+        
+    target_sim = mg_utils.get_sim_by_id(parsed_id)
+    if not target_sim: 
+        mg_logger.log(f"[FEHLER] UI-Trigger: Sim mit ID {parsed_id} existiert nicht.", is_debug=False, out=out)
+        return
         
     client = services.client_manager().get(_connection)
     active_household = client.active_sim.sim_info.household if (client and client.active_sim) else None
     
-    out(f"[UI] Trigger empfangen: Sim '{target_sim.first_name}', Option '{option_key}'")
-    mg_queue.start_queue([target_sim], option_key, active_household, out, False, _connection)
+    # 2. Schreiben des Klicks in die Log-Datei
+    mg_logger.log(f"[UI] Menue-Button geklickt fuer Sim: '{target_sim.first_name}' (Befehl: {option_key})", is_debug=False, out=out, force_debug=True)
+    
+    if option_key == 'household':
+        targets = list(target_sim.household) if target_sim.household else [target_sim]
+        mg_queue.start_queue(targets, 'auto', active_household, out, False, _connection)
+    else:
+        mg_queue.start_queue([target_sim], option_key, active_household, out, False, _connection)

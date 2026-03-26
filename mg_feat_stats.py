@@ -12,7 +12,7 @@ def apply_stats(sim_info, set_id, out, force_debug):
     skill_manager = services.get_instance_manager(sims4.resources.Types.STATISTIC)
     skill_count = 0
     
-    # Ermitteln, ob der Sim zum aktuell gespielten Haushalt gehoert (Player) oder ein NPC ist
+    # Ermitteln, ob Player oder NPC
     active_hh_id = services.active_household_id()
     is_player = (sim_info.household_id == active_hh_id) if active_hh_id else False
     
@@ -20,20 +20,30 @@ def apply_stats(sim_info, set_id, out, force_debug):
     luck_val = luck_data.get("value", 0)
     luck_locked = luck_data.get("locked", False)
     
-    # --- SKILL KONFIGURATION AUSWERTEN ---
     do_max_skills = active_set.get("max_player_skills", True) if is_player else active_set.get("max_npc_skills", False)
     
-    # Wenn die Liste leer ist, wird alles maximiert. Ansonsten nur Treffer. (Wir machen alles lowercase fuer sichere Suche)
+    # --- NEU: SKILL-ERLAUBNIS ODER FALLBACK LADEN ---
     allowed_skills = [s.lower() for s in active_set.get("allowed_skills", [])]
+    
+    if not allowed_skills:
+        # Wenn das Set keine eigenen Skills definiert, nutze den altersabhaengigen Fallback aus der Config
+        age_name = str(sim_info.age).split('.')[-1].upper()
+        if age_name == 'INFANT': age_group = 'infant'
+        elif age_name == 'TODDLER': age_group = 'toddler'
+        elif age_name == 'CHILD': age_group = 'child'
+        else: age_group = 'adult'
+        
+        fallback_dict = mg_config.get("fallback_skills", {})
+        allowed_skills = [s.lower() for s in fallback_dict.get(age_group, [])]
     
     if skill_manager:
         for stat_type in tuple(skill_manager.types.values()):
             stat_name = getattr(stat_type, '__name__', '').lower()
             
-            # SKILLS
+            # --- SKILLS MAXIMIEREN ---
             if do_max_skills and hasattr(stat_type, 'is_skill') and stat_type.is_skill:
-                # Pruefen, ob Array leer ist ODER der Skill-Name im Array vorkommt (z.B. "fitness" in "statistic_skill_adultmajor_fitness")
-                if not allowed_skills or any(allowed in stat_name for allowed in allowed_skills):
+                # Pruefe, ob der Skill_Name in unserer Fallback- oder Set-Liste auftaucht
+                if allowed_skills and any(allowed in stat_name for allowed in allowed_skills):
                     tracker = sim_info.get_tracker(stat_type)
                     if tracker:
                         try:
@@ -41,7 +51,7 @@ def apply_stats(sim_info, set_id, out, force_debug):
                             skill_count += 1
                         except: pass
                     
-            # LUCK (Glueck)
+            # --- LUCK (GLÜCK) ---
             if luck_data and "luck" in stat_name:
                 tracker = sim_info.get_tracker(stat_type)
                 if tracker:
@@ -52,11 +62,13 @@ def apply_stats(sim_info, set_id, out, force_debug):
                             if stat_inst: stat_inst.add_decay_rate_modifier(0.0)
                     except: pass
     
+    # --- ZUFRIEDENHEIT ---
     points = active_set.get("satisfaction_points", 0)
     if points > 0:
         try: sims4.commands.execute(f"sims.give_satisfaction_points {points} {sim_info.sim_id}", None)
         except: pass
 
+    # --- MOTIVE ---
     occult_type = mg_utils.get_occult_type(sim_info)
     motives_map = active_set.get("motives_to_freeze", {})
     targets = motives_map.get(occult_type, motives_map.get("human", []))
@@ -76,13 +88,10 @@ def apply_stats(sim_info, set_id, out, force_debug):
                             frozen_count += 1
                         except: pass
                         
-    # --- KARRIERE KONFIGURATION AUSWERTEN ---
+    # --- KARRIERE ---
     do_master_careers = active_set.get("master_player_careers", True) if is_player else active_set.get("master_npc_careers", False)
-    
-    # Karrieren und Bestreben pushen (nur wenn erlaubt UND der Sim kein Kind ist)
     if do_master_careers and not mg_utils.is_minor(sim_info):
         if hasattr(sim_info, 'career_tracker') and sim_info.career_tracker:
-            # career_tracker.careers.values() beinhaltet NUR die aktiven Berufe des Sims
             for career in tuple(sim_info.career_tracker.careers.values()):
                 for _ in range(15):
                     try: career.promote()

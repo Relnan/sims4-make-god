@@ -3,6 +3,7 @@
 all_traits_dump.txt
 *.txt
 .vscode/
+make_god_config.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
