@@ -7,33 +7,15 @@ CONFIG_FILE = os.path.join(MOD_FOLDER, 'make_god_config.json')
 
 DEFAULT_CONFIG = {
     "_comment_global": "MakeGod Mod Konfiguration. Alle Schluessel, die mit '_' beginnen, werden ignoriert.",
-    
-    "_help_language": "Sprache (aktuell Platzhalter fuer UI-Meldungen: 'de', 'en').",
     "language": "de",
-    
-    "_help_debug_log": "true: Schreibt jeden Schritt in die Log-Datei. false: Nur Fehler und Zusammenfassungen.",
     "debug_log": False,
-    
-    "_help_log_mode": "'append': Haengt neue Logs unten an. 'overwrite': Ueberschreibt die Log-Datei bei jedem Spielstart.",
     "log_mode": "overwrite",
     
     "_comment_sets": "=== DEINE SIMS-EINSTELLUNGEN (SETS) ===",
     "sets": {
-        "_help_set_parameter": {
-            "INFO": "Diese Hilfe wird vom Spiel ignoriert. Hier sind die Erklaerungen aller Set-Werte:",
-            "luck": "value: 0-100 (Vanilla Max 100). locked: true/false (friert den Wert dauerhaft ein).",
-            "allow_all_skills": "true/false. Wenn true, wird JEDE verfuegbare Faehigkeit auf das Max gesetzt.",
-            "harmony_friendship": "0 bis 100 (Vanilla Max 100). Legt Freundschaft fuer alle Haushaltsmitglieder fest.",
-            "harmony_romance": "0 bis 100. Legt Romantik fest.",
-            "target_relationship_status": "Zulaessig: 'married', 'engaged', 'significant_other', 'woohoo_partner', 'best_friend', 'friend'.",
-            "motives_to_freeze": "Welche Beduerfnisse maximiert und eingefroren werden sollen (Trennt nach Okkult-Typ).",
-            "exclude_all": "ENTHAELT-Filter (Substring). Loescht z.B. bei 'evil' alles, was böse ist.",
-            "traits_all": "MUSS der exakte EA/Mod Name sein."
-        },
-        
         "0": {
             "name": "Ultimate God (Standard Profil)",
-            "luck": {"value": 100, "locked": True},
+            "luck": {"value": 100},
             "allow_all_skills": False,
             "max_player_skills": True,
             "max_npc_skills": False,
@@ -46,36 +28,50 @@ DEFAULT_CONFIG = {
             "satisfaction_points": 50000,
             "add_funds": 9999999,
             "max_funds": 9999999,
-            "motives_to_freeze": {
+            "fill_motives_mode": "all",
+            "freeze_motives": True,
+            "motives_to_fill": {
                 "vampire": ["commodity_motive_vampire_power", "commodity_motive_vampire_thirst", "motive_hygiene", "motive_social", "motive_fun"],
-                "spellcaster": ["commodity_motive_witchoccult_charge", "motive_hunger", "motive_energy", "motive_bladder", "motive_hygiene", "motive_social", "motive_fun"],
-                "werewolf": ["commodity_motive_werewolf_fury", "motive_hunger", "motive_energy", "motive_bladder", "motive_hygiene", "motive_social", "motive_fun"],
+                "spellcaster": ["motive_hunger", "motive_energy", "motive_bladder", "motive_hygiene", "motive_social", "motive_fun"],
+                "werewolf": ["motive_hunger", "motive_energy", "motive_bladder", "motive_hygiene", "motive_social", "motive_fun"],
                 "mermaid": ["motive_hydration", "motive_hunger", "motive_energy", "motive_bladder", "motive_social", "motive_fun"],
-                "ghost": ["commodity_ghostpowers_stamina", "motive_social", "motive_fun"],
-                "alien": ["motive_brainpower", "motive_hunger", "motive_energy", "motive_bladder", "motive_hygiene", "motive_social", "motive_fun"],
                 "human": ["motive_hunger", "motive_energy", "motive_bladder", "motive_hygiene", "motive_social", "motive_fun"]
             },
             "exclude_all": [
-                "evil", "lazy", "hotheaded", "gloomy", "clumsy", "jealous", 
-                "slob", "unflirty", "fear_death", "erratic", "squeamish", 
-                "highmaintenance", "disgustedbyfood"
+                "trait_Evil", "trait_Lazy", "trait_HotHeaded", "trait_Gloomy", "trait_Clumsy", "trait_Jealous", 
+                "trait_Slob", "trait_Unflirty", "trait_Insane", "trait_Squeamish", "trait_Mean"
             ],
             "exclude_sex_male": [],
             "exclude_sex_female": [],
             "traits_all": [
-                "trait_Brave", "trait_Carefree", "trait_Savant", "trait_Beguiling", 
-                "trait_GreatKisser", "trait_Player", "trait_ForeverFresh", 
-                "trait_ForeverFull", "trait_NeverWeary", "trait_SteelBladder", 
-                "trait_Antiseptic", "trait_Shameless", "trait_Observant", 
-                "trait_ProfessionalSlacker", "trait_Alluring", "trait_Longevity"
+                "trait_AlwaysWelcome", "trait_Temperature_ColdAcclimation", "trait_GymRat", "trait_Temperature_HeatAcclimation",
+                "trait_Observant", "trait_SpeedCleaner", "trait_Waterproof", "trait_NewInTown_InspiredExplorer",
+                "trait_MorningPerson", "trait_NightOwl", "trait_SpeedReader", "trait_StormChaser",
+                "trait_Mentor", "trait_FreeServices", "trait_Marketable", "trait_CreativeVisionary",
+                "trait_Entrepreneurial", "trait_Frugal", "trait_Temperature_BurningMan", "trait_Temperature_IceMan",
+                "trait_Independent", "trait_Shameless", "trait_SteelBladder", "trait_Beguiling",
+                "trait_Antiseptic", "trait_Carefree", "trait_Connections", "trait_Fertile",
+                "trait_GreatKisser", "trait_HardlyHungry", "trait_ProfessionalSlacker", "trait_Savant",
+                "trait_SeldomSleepy", "trait_SuperGreenThumb", "trait_NeedsNoOne", "trait_Brave",
+                "trait_ForeverFull", "trait_NeverWeary", "trait_Legendary", "trait_FreshChef", 
+                "trait_OneWithNature", "trait_EpicPoet", "trait_Doctor_SicknessResistant", 
+                "trait_HolidayTradition_FatherWinterBaby", "trait_CreativelyGifted", "trait_MentallyGifted", 
+                "trait_PhysicallyGifted", "trait_SociallyGifted", "trait_ForeverFresh"
             ],
             "traits_sex_male": [],
-            "traits_sex_female": []
+            "traits_sex_female": [],
+            "traits_occult": {
+                "spellcaster": ["trait_Occult_WitchOccult_BloodlineAncient", "trait_Cauldron_Potion_Immortality"],
+                "vampire": ["trait_TheKnack"], 
+                "werewolf": ["trait_OccultWerewolf_Immortal", "trait_OccultWerewolf_Temperaments_Lunar_Resistance"], 
+                "mermaid": [],
+                "human": []
+            }
         },
         
         "1": {
             "name": "Mortal Lover (NPC Basis)",
-            "luck": {"value": 50, "locked": False},
+            "luck": {"value": 0},
             "allow_all_skills": False,
             "max_player_skills": False,
             "max_npc_skills": False,
@@ -88,23 +84,53 @@ DEFAULT_CONFIG = {
             "satisfaction_points": 0,
             "add_funds": 0,
             "max_funds": 250000,
-            "motives_to_freeze": {},
-            "exclude_all": ["unflirty", "jealous", "evil", "mean"],
+            "fill_motives_mode": "none",
+            "freeze_motives": False,
+            "motives_to_fill": {},
+            "exclude_all": ["trait_Unflirty", "trait_Jealous", "trait_Evil", "trait_Mean"],
             "exclude_sex_male": [],
             "exclude_sex_female": [],
-            "traits_all": ["trait_GreatKisser", "trait_Alluring", "trait_Carefree"],
+            "traits_all": ["trait_GreatKisser", "trait_Carefree"],
             "traits_sex_male": [],
-            "traits_sex_female": []
+            "traits_sex_female": [],
+            "traits_occult": {}
+        },
+
+        "2": {
+            "name": "Vanilla NPC",
+            "luck": {"value": 0},
+            "allow_all_skills": False,
+            "max_player_skills": False,
+            "max_npc_skills": False,
+            "allowed_skills": [],
+            "master_player_careers": False,
+            "master_npc_careers": False,
+            "harmony_friendship": 50,
+            "harmony_romance": 0,
+            "target_relationship_status": "friend",
+            "satisfaction_points": 0,
+            "add_funds": 0,
+            "max_funds": 50000,
+            "fill_motives_mode": "none",
+            "freeze_motives": False,
+            "motives_to_fill": {},
+            "exclude_all": [],
+            "exclude_sex_male": [],
+            "exclude_sex_female": [],
+            "traits_all": [],
+            "traits_sex_male": [],
+            "traits_sex_female": [],
+            "traits_occult": {}
         },
 
         "10": {
             "name": "Blessed Child (Gespieltes Kind)",
-            "luck": {"value": 100, "locked": True},
+            "luck": {"value": 100},
             "allow_all_skills": False,
             "max_player_skills": True,
             "max_npc_skills": False,
             "allowed_skills": [],
-            "master_player_careers": False,
+            "master_player_careers": True,
             "master_npc_careers": False,
             "harmony_friendship": 100,
             "harmony_romance": 0,
@@ -112,23 +138,29 @@ DEFAULT_CONFIG = {
             "satisfaction_points": 5000,
             "add_funds": 0,
             "max_funds": 9999999,
-            "motives_to_freeze": {
+            "fill_motives_mode": "all",
+            "freeze_motives": True,
+            "motives_to_fill": {
                 "human": ["motive_hunger", "motive_energy", "motive_bladder", "motive_hygiene", "motive_social", "motive_fun"]
             },
-            "exclude_all": ["mean", "gloomy", "erratic", "clumsy", "evil"],
+            "exclude_all": ["trait_Mean", "trait_Gloomy", "trait_Insane", "trait_Clumsy", "trait_Evil"],
             "exclude_sex_male": [],
             "exclude_sex_female": [],
             "traits_all": [
                 "trait_Savant", "trait_Carefree", "trait_Brave", "trait_Top_Notch_Toddler",
-                "trait_ScoutingAptitude", "trait_FreeServices"
+                "trait_ScoutingAptitude", "trait_FreeServices", "trait_CreativelyGifted", 
+                "trait_MentallyGifted", "trait_PhysicallyGifted", "trait_SociallyGifted"
             ],
             "traits_sex_male": [],
-            "traits_sex_female": []
+            "traits_sex_female": [],
+            "traits_occult": {
+                "spellcaster": ["trait_Occult_WitchOccult_BloodlineAncient"]
+            }
         },
         
         "11": {
             "name": "NPC Child (Normal)",
-            "luck": {"value": 0, "locked": False},
+            "luck": {"value": 0},
             "allow_all_skills": False,
             "max_player_skills": False,
             "max_npc_skills": False,
@@ -141,18 +173,19 @@ DEFAULT_CONFIG = {
             "satisfaction_points": 0,
             "add_funds": 0,
             "max_funds": 250000,
-            "motives_to_freeze": {},
-            "exclude_all": ["mean", "evil"],
+            "fill_motives_mode": "none",
+            "freeze_motives": False,
+            "motives_to_fill": {},
+            "exclude_all": ["trait_Mean", "trait_Evil"],
             "exclude_sex_male": [],
             "exclude_sex_female": [],
             "traits_all": [],
             "traits_sex_male": [],
-            "traits_sex_female": []
+            "traits_sex_female": [],
+            "traits_occult": {}
         }
     },
 
-    "_comment_system": "=== AB HIER SYSTEMEINSTELLUNGEN ===",
-    
     "auto_profiles": {
         "option_1": {
             "adult_playable_male": "0", "adult_playable_female": "0", 
@@ -161,7 +194,7 @@ DEFAULT_CONFIG = {
         },
         "option_2": {
             "adult_playable_male": "0", "adult_playable_female": "0", 
-            "adult_npc_male": "1", "adult_npc_female": "1",
+            "adult_npc_male": "2", "adult_npc_female": "2",
             "child_playable": "10", "child_npc": "11"
         },
         "option_3": {
