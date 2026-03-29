@@ -11,35 +11,27 @@ def get_sim_by_id(sim_id):
 def get_sims_by_name(name_string, active_household=None):
     """
     Sucht nach einem Sim ueber den Namen.
-    Priorisiert den aktiven Haushalt.
-    Gibt eine Liste von Treffern zurueck.
+    Gibt ALLE Treffer zurueck, um Mehrdeutigkeiten zu vermeiden.
     """
     sim_info_manager = services.sim_info_manager()
     if not sim_info_manager: return []
     
     search_name = str(name_string).lower().strip()
     
-    # Helferfunktion zum Pruefen eines Sims
     def match_name(sim):
         fname = getattr(sim, 'first_name', '').lower()
         lname = getattr(sim, 'last_name', '').lower()
         full_name = f"{fname} {lname}".strip()
         return search_name == fname or search_name == lname or search_name == full_name
 
-    matches_household = []
-    matches_global = []
-
+    # Wir geben alle Treffer zurueck, damit der Aufrufer (mg_main)
+    # bei len > 1 eine Warnung ausgeben kann.
+    all_matches = []
     for sim in sim_info_manager.values():
         if match_name(sim):
-            if active_household and sim in active_household:
-                matches_household.append(sim)
-            else:
-                matches_global.append(sim)
+            all_matches.append(sim)
 
-    # Prioritaet: Aktiver Haushalt zuerst
-    if matches_household:
-        return matches_household
-    return matches_global
+    return all_matches
 
 def get_occult_type(sim_info):
     """Gibt den Occult-Typ als einfachen String zurueck (vampire, spellcaster, human...)."""
@@ -59,25 +51,24 @@ def is_minor(sim_info):
     Sicher gegenkuenftige und alte EA-Patches.
     """
     try:
-        # Nativer Check (effizientest, existiert aber in alten Spieleversionen nicht)
+        # Nativer Check
         if hasattr(sim_info, 'is_teen_or_older'):
             return not sim_info.is_teen_or_older
             
-        # Fallback auf reinen Altersnamen (Sicherer als Enum-Check, da EA gelegentlich Enums erweitert/löscht)
+        # Fallback auf Alters-Enum Namen
         age_name = str(sim_info.age).split('.')[-1].upper()
         minor_ages = ['BABY', 'INFANT', 'TODDLER', 'CHILD']
         return age_name in minor_ages
     except:
-        return False # Bei einem Komplettfehler behandeln wir ihn sicherheitshalber nicht als Kind
+        return False
 
 def get_auto_set(sim_info, active_household, option_key="option_1"):
     """
     Ermittelt das korrekte Set aus den auto_profiles basierend auf
-    Alter, Geschlecht und ob der Sim spielbar (im aktiven Haushalt) ist.
+    Alter, Geschlecht und ob der Sim spielbar ist.
     """
     profiles = mg_config.get("auto_profiles", {}).get(option_key, {})
     
-    # Fallback auf Standard, falls Option in Config fehlt
     if not profiles:
         profiles = mg_config.get("auto_profiles", {}).get("option_1", {})
         
