@@ -7,42 +7,95 @@ CONFIG_FILE = os.path.join(MOD_FOLDER, 'make_god_config.json')
 
 DEFAULT_CONFIG = {
     "_comment_global": "MakeGod Mod Konfiguration. Alle Schluessel, die mit '_' beginnen, werden ignoriert.",
+    "_comment_setup": "Diese _Kommentare sind nur Einrichtungs-Hilfen. Du kannst sie beliebig loeschen, aendern oder erweitern.",
+    "_comment_copy_sets": "Eigene Sets: vorhandenes Set kopieren, neue ID vergeben (z.B. '3', '12' oder 'boss_npc') und in auto_profiles zuweisen.",
+
+    "_help_language": "Aktuell vorbereitet: 'de' oder 'en'. Standard ist 'de'.",
     "language": "de",
+
+    "_help_debug_log": "true = detaillierte Logdatei schreiben, false = nur normale Infos/Fehler.",
     "debug_log": False,
+
+    "_help_log_mode": "Erlaubt: 'overwrite' (pro Spielstart neu) oder 'append' (anhaengen).",
     "log_mode": "overwrite",
     
     "_comment_sets": "=== DEINE SIMS-EINSTELLUNGEN (SETS) ===",
     "sets": {
+        "_comment_sets_intro": "Jeder Eintrag unter 'sets' ist ein Profil. Die ID links ist frei waehlbar und sollte als String gespeichert werden.",
+        "_help_set_parameter": {
+            "name": "Freier Anzeigename fuer UI, Debug und deine Orientierung.",
+            "luck": {"value": "Typisch -100 bis 100. 100 = viel Glueck, 0 = neutral, -100 = Pech."},
+            "allow_all_skills": "true/false. Wenn true, werden alle als sicher erkannten Skills maximiert; allowed_skills wird dann praktisch ignoriert.",
+            "max_player_skills": "true/false. Gilt fuer Sims im aktiven Haushalt.",
+            "max_npc_skills": "true/false. Gilt fuer Townies / NPCs ausserhalb des aktiven Haushalts.",
+            "allowed_skills": "Liste mit Namens-Fragmenten, z.B. ['fitness', 'charisma', 'logic']. Leer [] = fallback_skills passend zum Alter verwenden.",
+            "master_player_careers": "true/false. Karriere/Schule/Aspirationen fuer spielbare Sims maximieren.",
+            "master_npc_careers": "true/false. Wie oben, aber fuer NPCs.",
+            "harmony_friendship": "0 = nicht anfassen. Sonst typischer Bereich -100 bis 100.",
+            "harmony_romance": "0 = nicht anfassen. Sonst typischer Bereich -100 bis 100.",
+            "target_relationship_status": "Erlaubt: '', 'friend', 'best_friend', 'woohoo_partner', 'significant_other', 'engaged', 'married'. Romantische Statuswerte werden bei Minderjaehrigen/Familien nicht gesetzt.",
+            "satisfaction_points": "Ganzzahl >= 0. 0 = keine Zusatzpunkte.",
+            "add_funds": "Ganzzahl > 0. Nur positive Werte fuegen Geld hinzu.",
+            "max_funds": "Obergrenze fuer das Haushaltsgeld nach add_funds.",
+            "fill_motives_mode": "Erlaubt: 'all', 'config', 'none'.",
+            "freeze_motives": "true/false. Stoppt den Verfall fuer die in motives_to_fill genannten Motive soweit moeglich.",
+            "motives_to_fill": {
+                "keys": "Empfohlene Keys: 'human', 'vampire', 'spellcaster', 'werewolf', 'mermaid'.",
+                "values": "Je Key eine Liste exakter Motiv-/Commodity-Namen wie 'motive_hunger' oder 'commodity_motive_vampire_thirst'."
+            },
+            "exclude_all": "Traits immer entfernen. Am sichersten mit exaktem internen Namen, z.B. 'trait_Evil'.",
+            "exclude_sex_male": "Wie exclude_all, aber nur fuer maennliche Sims.",
+            "exclude_sex_female": "Wie exclude_all, aber nur fuer weibliche Sims.",
+            "traits_all": "Traits immer hinzufuegen. Am sichersten mit exaktem internen Namen, z.B. 'trait_Savant'.",
+            "traits_sex_male": "Zusatz-Traits nur fuer maennliche Sims.",
+            "traits_sex_female": "Zusatz-Traits nur fuer weibliche Sims.",
+            "traits_occult": {
+                "keys": "Empfohlene Keys: 'human', 'vampire', 'spellcaster', 'werewolf', 'mermaid'.",
+                "values": "Je Okkult-Typ eine Trait-Liste. Nicht benoetigte Keys koennen leer bleiben."
+            }
+        },
+        "_comment_set_copy": "Zum Erstellen eigener Profile einfach einen vorhandenen Block kopieren und die Werte aendern.",
         "0": {
+            "_comment_profile": "Beispiel fuer ein komplettes God-Set fuer spielbare Erwachsene.",
+            "_comment_name": "Freier Anzeigename fuer dieses Set.",
             "name": "Ultimate God (Standard Profil)",
+            "_comment_luck": "Typisch -100 bis 100. 100 = maximales Glueck, 0 = neutral.",
             "luck": {"value": 100},
+            "_comment_skills": "allow_all_skills ueberschreibt die Filterung; bei leerer allowed_skills-Liste greifen fallback_skills.",
             "allow_all_skills": False,
             "max_player_skills": True,
             "max_npc_skills": False,
             "allowed_skills": [],
+            "_comment_careers": "true = Karriere/Schule/Aspirationen forcieren.",
             "master_player_careers": True,
             "master_npc_careers": False,
+            "_comment_relations": "Status erlaubt: '', friend, best_friend, woohoo_partner, significant_other, engaged, married.",
             "harmony_friendship": 100,
             "harmony_romance": 100,
             "target_relationship_status": "woohoo_partner",
+            "_comment_rewards": "Ganzzahlen. add_funds wirkt nur > 0; max_funds begrenzt das Ergebnis.",
             "satisfaction_points": 50000,
             "add_funds": 9999999,
             "max_funds": 9999999,
+            "_comment_motives": "fill_motives_mode: 'all', 'config' oder 'none'. Bei 'config' werden nur die unten genannten Motive gezielt gefuellt.",
             "fill_motives_mode": "all",
             "freeze_motives": True,
             "motives_to_fill": {
+                "_comment_occult_keys": "Empfohlen: human, vampire, spellcaster, werewolf, mermaid.",
                 "vampire": ["commodity_motive_vampire_power", "commodity_motive_vampire_thirst", "motive_hygiene", "motive_social", "motive_fun"],
                 "spellcaster": ["motive_hunger", "motive_energy", "motive_bladder", "motive_hygiene", "motive_social", "motive_fun"],
                 "werewolf": ["motive_hunger", "motive_energy", "motive_bladder", "motive_hygiene", "motive_social", "motive_fun"],
                 "mermaid": ["motive_hydration", "motive_hunger", "motive_energy", "motive_bladder", "motive_social", "motive_fun"],
                 "human": ["motive_hunger", "motive_energy", "motive_bladder", "motive_hygiene", "motive_social", "motive_fun"]
             },
+            "_comment_traits_remove": "Traits per internem Namen entfernen; leere Listen [] lassen den Bereich unveraendert.",
             "exclude_all": [
                 "trait_Evil", "trait_Lazy", "trait_HotHeaded", "trait_Gloomy", "trait_Clumsy", "trait_Jealous", 
                 "trait_Slob", "trait_Unflirty", "trait_Insane", "trait_Squeamish", "trait_Mean"
             ],
             "exclude_sex_male": [],
             "exclude_sex_female": [],
+            "_comment_traits_add": "Traits per internem Namen hinzufuegen; traits_occult wird nur beim passenden Okkult-Typ genutzt.",
             "traits_all": [
                 "trait_AlwaysWelcome", "trait_Temperature_ColdAcclimation", "trait_GymRat", "trait_Temperature_HeatAcclimation",
                 "trait_Observant", "trait_SpeedCleaner", "trait_Waterproof", "trait_NewInTown_InspiredExplorer",
@@ -61,6 +114,7 @@ DEFAULT_CONFIG = {
             "traits_sex_male": [],
             "traits_sex_female": [],
             "traits_occult": {
+                "_comment_occult_trait_keys": "Nur passende Okkult-Typen befuellen; nicht benoetigte Keys duerfen leer bleiben.",
                 "spellcaster": ["trait_Occult_WitchOccult_BloodlineAncient", "trait_Cauldron_Potion_Immortality"],
                 "vampire": ["trait_TheKnack"], 
                 "werewolf": ["trait_OccultWerewolf_Immortal", "trait_OccultWerewolf_Temperaments_Lunar_Resistance"], 
@@ -70,6 +124,7 @@ DEFAULT_CONFIG = {
         },
         
         "1": {
+            "_comment_profile": "Beispiel fuer einen romantischen NPC-/Partner-Basisbauplan.",
             "name": "Mortal Lover (NPC Basis)",
             "luck": {"value": 0},
             "allow_all_skills": False,
@@ -97,6 +152,7 @@ DEFAULT_CONFIG = {
         },
 
         "2": {
+            "_comment_profile": "Neutrales NPC-Profil ohne grosse Eingriffe.",
             "name": "Vanilla NPC",
             "luck": {"value": 0},
             "allow_all_skills": False,
@@ -124,6 +180,7 @@ DEFAULT_CONFIG = {
         },
 
         "10": {
+            "_comment_profile": "Kinderprofil fuer gespielte Haushaltskinder.",
             "name": "Blessed Child (Gespieltes Kind)",
             "luck": {"value": 100},
             "allow_all_skills": False,
@@ -159,6 +216,7 @@ DEFAULT_CONFIG = {
         },
         
         "11": {
+            "_comment_profile": "Normales Kinderprofil fuer NPC-Kinder.",
             "name": "NPC Child (Normal)",
             "luck": {"value": 0},
             "allow_all_skills": False,
@@ -186,25 +244,32 @@ DEFAULT_CONFIG = {
         }
     },
 
+    "_comment_auto_profiles": "Ordnet die UI-/Cheat-Optionen den Set-IDs zu. Jeder Wert muss auf eine existierende ID aus 'sets' zeigen.",
     "auto_profiles": {
+        "_comment_roles": "Rollen: adult_playable_male, adult_playable_female, adult_npc_male, adult_npc_female, child_playable, child_npc.",
         "option_1": {
+            "_comment": "Standard fuer UI Option 1 sowie 'auto'.",
             "adult_playable_male": "0", "adult_playable_female": "0", 
             "adult_npc_male": "1", "adult_npc_female": "1",
             "child_playable": "10", "child_npc": "11"
         },
         "option_2": {
+            "_comment": "Alternative fuer UI Option 2.",
             "adult_playable_male": "0", "adult_playable_female": "0", 
             "adult_npc_male": "2", "adult_npc_female": "2",
             "child_playable": "10", "child_npc": "11"
         },
         "option_3": {
+            "_comment": "Alternative fuer UI Option 3.",
             "adult_playable_male": "0", "adult_playable_female": "0", 
             "adult_npc_male": "1", "adult_npc_female": "1",
             "child_playable": "10", "child_npc": "11"
         }
     },
 
+    "_comment_fallback_skills": "Wird genutzt, wenn in einem Set 'allowed_skills': [] leer ist. Die Eintraege sind Namens-Fragmente, keine strengen Exakt-Treffer.",
     "fallback_skills": {
+        "_comment_age_keys": "Erlaubte Alters-Keys: adult, child, toddler, infant.",
         "adult": [
             "adultmajor", "adultminor", "skill_fitness", "skill_archery", "skill_crossstitch", 
             "skill_dogtraining", "skill_retail", "skill_hidden_skating", "skill_hidden_vampirelore", 
