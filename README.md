@@ -80,6 +80,18 @@ Standardmäßig gibt es z.B.:
 * **Set 0 (Ultimate God):** Der Sim kriegt alle Fähigkeiten auf Maximum, alle Karrieren auf Stufe 10, Millionen von Simoleons, negative Merkmale (wie "Böse" oder Abneigungen) werden gelöscht und seine Bedürfnisse frieren für immer auf Maximum ein. Zudem lernt er alle Zauber und Okkult-Perks.  
 * **Set 10 (Blessed Child):** Das perfekte Kinder-Profil. Karrieren werden ignoriert, aber die Kinder-Fähigkeiten (Motorik, Kreativität) werden gemaxt.
 
+### **📊 Standard-Sets im Überblick**
+
+| Set-ID | Name | Zielgruppe | Kernfunktionen |
+|--------|------|------------|----------------|
+| `0` | Ultimate God | Spielbarer Erwachsener | Alle Skills + Karrieren max., 9,9 Mio. Simoleons, Bedürfnisse einfrieren, negative Traits entfernen, WickedWhims-Traits |
+| `1` | Mortal Lover | NPC-Partner | Freundschaft + Romantik 100, Status „Bedeutende/r Andere/r", wenige Trait-Korrekturen |
+| `2` | Vanilla NPC | Neutraler Townie | Freundschaft 50, keinerlei Geld- oder Skill-Eingriff |
+| `10` | Blessed Child | Spielbares Kind / Kleinkind | Altersgerechte Skills, Bedürfnisse einfrieren, Kindheits-Boni |
+| `11` | NPC Child | NPC-Kind | Nur „Gemein" und „Böse" entfernen – sonst kein Eingriff |
+
+Eigene Sets anlegen: Kopiere einen vorhandenen Block in der `make_god_config.json`, vergib eine neue ID (z. B. `"5"` oder `"boss_npc"`) und trage sie in `auto_profiles` ein.
+
 ### **Was sind "Auto Profile"?**
 
 Die Mod ist schlau\! Wenn du im Spiel auf "Option 1" klickst, bekommt nicht jeder Sim einfach stur "Set 0" aufgedrückt.  
@@ -95,13 +107,87 @@ Die Datei enthält ein eingebautes Lexikon (\_help\_set\_parameter). Hier ist ku
 * **Fähigkeiten (Skills):** max\_player\_skills und max\_npc\_skills steuern, ob Skills überhaupt maximiert werden. Mit allowed\_skills begrenzt du das auf bestimmte Skill-Namen. Mit allow\_all\_skills: true werden wirklich alle verfügbaren Skills maximiert.  
 * **Traits & Abneigungen:** traits\_all und exclude\_all steuern globale Trait-Filter. Der mächtige Schalter "remove\_all\_dislikes": true entfernt vollautomatisch alle \[DISLIKE\] Merkmale (Abneigungen gegen Farben, Musik, Hobbys), sodass dein Sim niemals mehr grundlos schlechte Laune bekommt.  
 * **Magie & Okkult-Vorteile:** Du kannst Perks (Ruhm & Okkult-Fähigkeiten) über perks\_all / perks\_occult und Zaubersprüche/Tränke über spells\_all / spells\_occult gezielt freischalten.  
-* **Beziehungen im Haushalt:** harmony\_friendship, harmony\_romance und target\_relationship\_status setzen Freundschaft, Romantik und Beziehungsstatus für Mitglieder desselben Haushalts.
+* **Beziehungen im Haushalt:** harmony\_friendship, harmony\_romance und target\_relationship\_status setzen Freundschaft, Romantik und Beziehungsstatus für Haushaltsmitglieder. Über remove\_negative\_relations, remove\_negative\_relations\_household und remove\_negative\_relations\_scope lassen sich außerdem Feindschaften, Groll und Angst-Bits gezielt im gesamten weltweiten Beziehungsnetz entfernen.
 
 ### **Okkulte Sims (Vampire, Werwölfe, Magier)**
 
 MakeGod behandelt okkulte Sims völlig automatisch korrekt\! In der Konfiguration (unter "motives\_to\_fill") weiß das Spiel genau, dass ein Vampir keine "Blase" hat, die eingefroren werden muss, sondern "Durst" und "Vampir-Energie".
 
-## **🕵️‍♀️ Für Tech-Freaks & Modder: Das Dump-System**
+## **� Vollständige Konfigurations-Referenz**
+
+Alle verfügbaren Parameter auf einen Blick. Die `_help_set_parameter`-Sektion in der `make_god_config.json` enthält dieselben Beschreibungen direkt im Mod-Ordner.
+
+### Globale Einstellungen
+
+| Schlüssel | Typ | Standard | Bedeutung |
+|-----------|-----|----------|-----------| 
+| `language` | String | `"de"` | Sprache der eingebauten Hilfetexte (`"de"` oder `"en"`). |
+| `debug_log` | Boolean | `false` | `true` = jede Aktion wird detailliert geloggt und im Spiel angezeigt (bei `debug`-Befehl). |
+| `log_mode` | String | `"overwrite"` | `"overwrite"` = Log-Datei bei jedem Start neu erstellen; `"append"` = Einträge anhängen. |
+| `dump_blacklist_keywords` | Liste | *(technische Strings)* | Teilstrings, die beim Sim-Dump aus der Statistik-Ausgabe herausgefiltert werden, z. B. `"_high"`, `"caspartid"`. |
+
+### Skills & Karriere
+
+| Schlüssel | Typ | Bedeutung |
+|-----------|-----|-----------|
+| `allow_all_skills` | Boolean | `true` = Alle sicher erkannten Skills maximieren; überschreibt die Filterung durch `allowed_skills`. |
+| `max_player_skills` | Boolean | Skills für Sims im gespielten Haushalt maximieren. |
+| `max_npc_skills` | Boolean | Skills für NPCs und Townies maximieren. |
+| `allowed_skills` | Liste | Namens-Fragmente erlaubter Skills (z. B. `["fitness", "logic"]`). Leer = `fallback_skills` greift. |
+| `master_player_careers` | Boolean | Alle aktiven Karrieren promoten, Schule pushen und den aktuellen Bestrebungs-Meilenstein abschließen (gespielte Sims). |
+| `master_npc_careers` | Boolean | Wie oben, aber für NPCs. |
+
+Die Config enthält zusätzlich den Abschnitt `"fallback_skills"`, der pro Altersgruppe (`adult`, `child`, `toddler`, `infant`) festlegt, welche Skills maximiert werden, wenn `allowed_skills` leer ist. Für Kinder und Kleinkinder greift immer eine altersgerechte Gruppe – unabhängig vom gewählten Set.
+
+### Luck, Belohnungen & Geld
+
+| Schlüssel | Typ | Bedeutung |
+|-----------|-----|-----------|
+| `luck` → `value` | Zahl | Glückswert: `-100` (Pech) bis `100` (Glück); `0` = nicht verändern. |
+| `satisfaction_points` | Zahl | Zufriedenheitspunkte hinzufügen. `0` = kein Eingriff. |
+| `add_funds` | Zahl | Simoleons dem Haushalt hinzufügen. Pro Haushalt nur einmal pro Run ausgeführt. `0` = kein Eingriff. |
+| `max_funds` | Zahl | Obergrenze des Haushaltsvermögens nach dem Hinzufügen. |
+
+### Bedürfnisse & Motive
+
+| Schlüssel | Typ | Bedeutung |
+|-----------|-----|-----------|
+| `fill_motives_mode` | String | `"all"` = EA-Cheat für alle Motive; `"config"` = nur die in `motives_to_fill` genannten; `"none"` = kein Eingriff. |
+| `freeze_motives` | Boolean | Setzt den Verfalls-Modifier der in `motives_to_fill` genannten Commodities auf `0`. Der Sim verliert diese Bedürfnisse dann nicht mehr automatisch. |
+| `motives_to_fill` | Objekt | Schlüssel: Okkult-Typ (`"human"`, `"vampire"`, `"spellcaster"`, `"werewolf"`, `"mermaid"`). Wert: Liste exakter Commodity-Namen, z. B. `"motive_hunger"` oder `"commodity_motive_vampire_thirst"`. |
+
+### Traits, Perks & Zauber
+
+| Schlüssel | Typ | Bedeutung |
+|-----------|-----|-----------|
+| `remove_all_dislikes` | Boolean | `true` = Alle `[DISLIKE]`-Merkmale (Farb-/Musik-Abneigungen) werden automatisch erkannt und entfernt. |
+| `exclude_all` | Liste | Traits immer entfernen – gilt für alle Sims dieses Sets. |
+| `exclude_sex_male` | Liste | Traits nur bei männlichen Sims entfernen. |
+| `exclude_sex_female` | Liste | Traits nur bei weiblichen Sims entfernen. |
+| `traits_all` | Liste | Traits immer hinzufügen – gilt für alle Sims dieses Sets. |
+| `traits_sex_male` | Liste | Traits nur bei männlichen Sims hinzufügen. |
+| `traits_sex_female` | Liste | Traits nur bei weiblichen Sims hinzufügen. |
+| `traits_occult` | Objekt | Okkult-Typ → Trait-Liste. Nur der Typ des aktuellen Sims wird berücksichtigt. |
+| `perks_all` | Liste | Okkult-/Ruhm-Perks für alle Sims freischalten (über den internen Bucks-Tracker). |
+| `perks_occult` | Objekt | Perks nach Okkult-Typ (`"vampire"`, `"spellcaster"`, `"werewolf"`). |
+| `spells_all` | Liste | Zauber, Tränke und Rezepte für alle Sims freischalten. |
+| `spells_occult` | Objekt | Zauber nach Okkult-Typ aufgeschlüsselt. |
+
+### Beziehungen bereinigen & setzen
+
+| Schlüssel | Typ | Bedeutung |
+|-----------|-----|-----------|
+| `harmony_friendship` | Zahl | Freundschaftswert für alle Haushaltsmitglieder setzen. `0` = nicht anfassen. |
+| `harmony_romance` | Zahl | Romantikwert setzen (nur für Sims ab Teen-Alter). `0` = nicht anfassen. |
+| `target_relationship_status` | String | Beziehungsstatus erzwingen. Erlaubt: `"friend"`, `"best_friend"`, `"woohoo_partner"`, `"significant_other"`, `"engaged"`, `"married"`. |
+| `remove_negative_relations` | Boolean | `true` = Scannt alle weltweiten Beziehungen. Sims, die ein Bit aus `remove_negative_relations_scope` tragen, werden von **allen** negativen Bits befreit. |
+| `remove_negative_relations_household` | Boolean | `true` = Haushaltsmitglieder werden **immer** bereinigt – unabhängig vom Scope. |
+| `remove_negative_relations_scope` | Liste | Bit-Namens-Fragmente (z. B. `"friend"`, `"romantic"`, `"married"`), die einem weltweiten Sim Kandidaten-Status verleihen. Als negativ gelten Bits wie `enemy`, `grudge`, `divorced`, `breakup`, `hostile`, `fear`. |
+
+**Beispiel:** `"remove_negative_relations": true` mit `"remove_negative_relations_scope": ["friend", "romantic", "married"]`  
+→ Alle Freunde, Partner und Haushaltsmitglieder werden von Groll, Feindschaft und Angst befreit. Unbekannte Townies ohne Beziehung bleiben unberührt.
+
+## **�🕵️‍♀️ Für Tech-Freaks & Modder: Das Dump-System**
 
 Du willst deinem Set Merkmale aus anderen Mods (wie *WickedWhims* oder *Basemental*) hinzufügen, kennst aber den internen Namen nicht? Die Mod bringt ein mächtiges Auslese-Werkzeug mit\!
 
@@ -118,6 +204,10 @@ Willst du wissen, welche internen System-Werte ein bestimmter Sim gerade hat?
 Tippe rmg.dump all (für den ganzen Haushalt) oder rmg.dump active.  
 Die Mod exportiert ein sauberes Dokument, das dir nicht nur Traits und Skills auflistet, sondern auch verborgene System-Werte (Commodities), okkulte Perks, freigeschaltete Zauber sowie Beziehungs-Werte und verborgene Beziehungs-Bits zu anderen Sims.  
 *(Tipp: Über den Punkt dump\_blacklist\_keywords in der Config filtert die Mod automatisch uninteressanten System-Junk aus diesen Reports heraus).*
+
+### **3\. Dump eines bestimmten Sims per ID**
+
+Mit dem Befehl rmg.dump id \<SimID\> (z. B. rmg.dump id 12345678) kannst du gezielt einen einzelnen Sim exportieren – auch wenn er nicht in deinem aktiven Haushalt ist. Die SimID findest du entweder im Sim-Abschnitt eines vorherigen Dumps (Feld **ID**) oder über rmg.name "Vorname" in der Konsole (gibt bei mehreren Treffern alle IDs aus).
 
 ## **❓ Häufige Fragen (FAQ)**
 
@@ -150,5 +240,41 @@ Die Mod exportiert ein sauberes Dokument, das dir nicht nur Traits und Skills au
 * Vor dem Bearbeiten kurz eine Kopie der Datei machen (z.B. make\_god\_config\_backup.json).  
 * Danach nur kleine Änderungen machen und testen.  
 * Wenn etwas kaputt ist: make\_god\_config.json löschen, Spiel neu starten, neue Standard-Datei erzeugen lassen.
+
+**Perks oder Zauber werden nicht freigeschaltet, obwohl die Namen korrekt wirken!**
+
+* Die Namen müssen exakt mit dem internen `__name__`-Attribut der Engine übereinstimmen – nicht mit dem Anzeigenamen im Spiel.
+* Nutze rmg.dump reference, um die korrekten Namen direkt aus dem laufenden Spiel zu exportieren.
+* Okkult-Perks (Vampire, Magier, Werwölfe) können nur freigeschaltet werden, wenn der Sim den entsprechenden Okkult-Typ bereits hat.
+
+**rmg.name findet den Sim nicht!**
+
+* Gib den Vor- oder Nachnamen exakt ein (Groß-/Kleinschreibung wird ignoriert).
+* Bei mehreren Treffern gibt die Mod alle Kandidaten mit ID in der Konsole aus – verwende dann rmg.id \<SimID\>.
+* Sims, die nicht im Spielspeicher geladen sind (z. B. Townies aus weit entfernten Welten), werden möglicherweise nicht gefunden.
+
+**Beziehungen oder Geld werden nach einem Spielupdate zurückgesetzt!**
+
+* Das ist kein Mod-Bug – EAs "Relationship Culling" löscht ältere Freundschaften bei bestimmten Ereignissen automatisch.
+* Abhilfe: MC Command Center (MCCC) installieren und die No-Cull-Flags aktivieren. Diese Flags lassen sich auch direkt über MakeGod verteilen, z. B. Deaderpool\_MCCC\_Trait\_FlagNoRelCull in traits\_all.
+
+**Karrieren werden nicht gepusht!**
+
+* Karrieren können nur befördert werden, wenn der Sim bereits in einer Karriere ist. MakeGod weist keine neue Karriere zu – nur vorhandene werden gepusht.
+* Schule (gradeschool / highschool) wird für Kinder und Teens automatisch erkannt und braucht nicht konfiguriert zu werden.
+
+## ⚠️ Wichtige Hinweise zur Performance (Freezes & Lags)
+
+Wenn du das Kommando `rmg.all` oder Beziehungs-Updates bei Sims mit sehr vielen Bekanntschaften ausführst, kann es passieren, dass **das Spiel für einige Sekunden (bis hin zu einer Minute) komplett einfriert**.
+
+**Keine Panik, das Spiel ist nicht abgestürzt!**
+Dieses Verhalten ist eine technische Limitierung der *Die Sims 4*-Engine. 
+Das Skript arbeitet im Hintergrund hochkomplexe Matrizen ab: Es scannt das gesamte erweiterte soziale Netzwerk deines Sims, bereinigt versteckte negative Tracker, ignoriert Kompatibilitäts-Konflikte und passt Freundschafts- sowie Romantikwerte nach Alter und Geschlecht an. Da die Engine diese Berechnungen auf dem sogenannten "Main-Thread" (Hauptprozess) erzwingt, pausiert die Bildausgabe, bis das Skript fertig ist.
+
+**Was du tun solltest:**
+1. **Abwarten:** Lass das Spiel einfach rechnen. Wenn du das Ingame-Cheatfenster (Strg+Shift+C) geöffnet hast, kannst du live mitlesen, welchen Sim das Skript gerade bearbeitet.
+2. **Verzögerte Anzeige im Spiel:** Wenn das Skript fertig ist und das Spiel weiterläuft, **kann es einen kurzen Moment dauern, bis die neuen Beziehungswerte im UI (Beziehungs-Panel) sichtbar sind.** Die Engine aktualisiert die visuelle Anzeige der Freundschaften etwas verzögert im Hintergrund.
+
+**Tipp:** Wenn du die Beziehungs-Funktionen (wie `harmony_extended_network`) in deiner Konfiguration deaktivierst oder auf `-999` setzt, läuft das Skript deutlich schneller durch.
 
 *Viel Spaß beim Erschaffen deiner perfekten Sims-Welt\!*

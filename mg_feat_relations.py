@@ -6,114 +6,189 @@ import services
 import sims4.resources
 
 def apply_relations(sim_info, set_id, out, force_debug):
-    """Setzt Freundschaft, Romantik und bereinigt negative Beziehungen nach Scope."""
     try:
+        first_name = getattr(sim_info, 'first_name', 'Sim')
+        out(f"   -> [{first_name}] Berechne Beziehungen & Netzwerk...")
+
         active_set = mg_config.get("sets", {}).get(str(set_id), {})
         if not active_set: return
         
         tracker = getattr(sim_info, 'relationship_tracker', None)
         if not tracker: return
 
-        # Hole Haushaltsmitglieder intern, um die Signatur für mg_main.py nicht zu brechen
         targets = list(sim_info.household) if getattr(sim_info, 'household', None) else [sim_info]
-
-        # --- 1. NEGATIVE BEZIEHUNGEN BEREINIGEN (GETRENNT NACH HAUSHALT & SCOPE) ---
-        remove_negatives_scope = active_set.get("remove_negative_relations", False)
-        remove_negatives_household = active_set.get("remove_negative_relations_household", False)
         
-        if remove_negatives_scope or remove_negatives_household:
-            raw_scope = active_set.get("remove_negative_relations_scope", 
-                                            ["roommate", "key", "friend", "romantic", "woohoo", "married", "significant"])
-            if not raw_scope: raw_scope = []
-            scope_keywords = [str(s).lower() for s in raw_scope]
-
-            negative_keywords = ['enemy', 'despised', 'bitter', 'grudge', 'hate', 'furious', 
-                                 'awkward', 'creepy', 'bad', 'negative', 'divorced', 'breakup', 
-                                 'cheated', 'resent', 'hurt', 'hostile', 'angry', 'dislike', 
-                                 'frustrated', 'fear', 'jealous', 'guilt']
-
-            for target_id in tuple(tracker.target_sim_gen()):
-                target_sim_info = mg_utils.get_sim_by_id(target_id)
-                is_in_scope = False
-                
-                if remove_negatives_household and target_sim_info:
-                    if getattr(target_sim_info, 'household_id', None) == getattr(sim_info, 'household_id', None):
-                        is_in_scope = True
-                
-                current_bits = tuple(tracker.get_all_bits(target_id))
-                if not is_in_scope and remove_negatives_scope:
-                    for bit in current_bits:
-                        b_name = getattr(bit, '__name__', '').lower()
-                        if any(kw in b_name for kw in scope_keywords):
-                            is_in_scope = True
-                            break
-                        if 'fear' in b_name or 'jealous' in b_name:
-                            is_in_scope = True
-                            break
-                
-                if is_in_scope:
-                    for bit in current_bits:
-                        raw_b_name = getattr(bit, '__name__', '')
-                        b_name = raw_b_name.lower()
-                        
-                        if any(kw in b_name for kw in negative_keywords):
-                            # Diagnose-Schritt: Exakte Fehlererfassung
-                            try:
-                                tracker.remove_bit(target_id, bit)
-                            except AttributeError:
-                                # Fallback für den Fall, dass die Methode in neueren Patches anders heißt
-                                try:
-                                    tracker.remove_relationship_bit(target_id, bit)
-                                except Exception as e2:
-                                    mg_logger.log(f"      [Warnung] API Remove (Alt) blockiert für '{raw_b_name}'. Grund: {type(e2).__name__} - {str(e2)}", is_debug=True, out=out, force_debug=force_debug)
-                            except Exception as e:
-                                mg_logger.log(f"      [Warnung] API Remove blockiert für '{raw_b_name}'. Grund: {type(e).__name__} - {str(e)}", is_debug=True, out=out, force_debug=force_debug)
-                            
-                            # Bidirektional
-                            if target_sim_info:
-                                target_tracker = getattr(target_sim_info, 'relationship_tracker', None)
-                                if target_tracker:
-                                    try:
-                                        target_tracker.remove_bit(sim_info.sim_id, bit)
-                                    except:
-                                        pass
-                            
-                            # Konsolen-Command-Fallback
-                            try:
-                                sims4.commands.execute(f"relationship.remove_bit {sim_info.sim_id} {target_id} {raw_b_name}", None)
-                                sims4.commands.execute(f"relationship.remove_bit {target_id} {sim_info.sim_id} {raw_b_name}", None)
-                            except:
-                                pass
-
-        # --- 2. POSITIVE HAUSHALTSBEZIEHUNGEN FORCIEREN ---
-        target_f = active_set.get("harmony_friendship", 0)
-        target_r = active_set.get("harmony_romance", 0)
-        target_status = active_set.get("target_relationship_status", "")
-
-        if target_f == 0 and target_r == 0 and not target_status:
-            return
-
         skill_manager = services.get_instance_manager(sims4.resources.Types.STATISTIC)
         f_track = skill_manager.get(16650) if skill_manager else None
         r_track = skill_manager.get(16651) if skill_manager else None
 
+        # --- CONFIGS LADEN ---
+        remove_negatives_scope = active_set.get("remove_negative_relations", False)
+        remove_negatives_household = active_set.get("remove_negative_relations_household", False)
+        raw_scope = active_set.get("remove_negative_relations_scope", [])
+        scope_keywords = [str(s).lower() for s in raw_scope]
+        negative_keywords = ['enemy', 'despised', 'bitter', 'grudge', 'hate', 'furious', 
+                             'awkward', 'creepy', 'bad', 'negative', 'divorced', 'breakup', 
+                             'cheated', 'resent', 'hurt', 'hostile', 'angry', 'dislike', 
+                             'frustrated', 'fear', 'jealous', 'guilt']
+
+        ext_network = active_set.get("harmony_extended_network", {})
+        ext_enabled = ext_network.get("enabled", False)
+        raw_ext_scope = ext_network.get("scopes", [])
+        ext_scope_keywords = [str(s).lower() for s in raw_ext_scope]
+        
+        is_source_female = getattr(sim_info, 'is_female', False)
+        source_key = "source_female" if is_source_female else "source_male"
+        source_config = ext_network.get(source_key, {})
+
+        # --- ZÄHLER INITIALISIEREN ---
+        checked_count = 0
+        modified_count = 0
+
+        # --- 1. & 2. SINGLE-PASS SCHLEIFE FÜR ALLE EXTERNEN BEZIEHUNGEN ---
+        for target_id in tuple(tracker.target_sim_gen()):
+            if target_id == sim_info.sim_id: continue
+            
+            checked_count += 1
+            target_modified = False
+            
+            target_sim_info = None  
+            current_bits = tuple(tracker.get_all_bits(target_id))
+            
+            # --- TEIL A: NEGATIVE BEREINIGUNG ---
+            if remove_negatives_scope or remove_negatives_household:
+                is_in_neg_scope = False
+                
+                if remove_negatives_household:
+                    if not target_sim_info: target_sim_info = mg_utils.get_sim_by_id(target_id)
+                    if target_sim_info and getattr(target_sim_info, 'household_id', None) == getattr(sim_info, 'household_id', None):
+                        is_in_neg_scope = True
+                
+                if not is_in_neg_scope and remove_negatives_scope:
+                    for bit in current_bits:
+                        b_name = getattr(bit, '__name__', '').lower()
+                        if any(kw in b_name for kw in scope_keywords) or 'fear' in b_name or 'jealous' in b_name:
+                            is_in_neg_scope = True
+                            break
+                
+                if is_in_neg_scope:
+                    for bit in current_bits:
+                        raw_b_name = getattr(bit, '__name__', '')
+                        b_name = raw_b_name.lower()
+                        
+                        if 'compatibility' in b_name: continue
+
+                        if any(kw in b_name for kw in negative_keywords):
+                            api_success = False
+                            try: 
+                                tracker.remove_bit(target_id, bit)
+                                api_success = True
+                                target_modified = True
+                            except: pass
+                            
+                            if not target_sim_info: target_sim_info = mg_utils.get_sim_by_id(target_id)
+                            if target_sim_info:
+                                target_tracker = getattr(target_sim_info, 'relationship_tracker', None)
+                                if target_tracker:
+                                    try: target_tracker.remove_bit(sim_info.sim_id, bit)
+                                    except: pass
+                            
+                            if not api_success:
+                                try:
+                                    sims4.commands.execute(f"relationship.remove_bit {sim_info.sim_id} {target_id} {raw_b_name}", None)
+                                    sims4.commands.execute(f"relationship.remove_bit {target_id} {sim_info.sim_id} {raw_b_name}", None)
+                                    target_modified = True
+                                except: pass
+
+            # --- TEIL B: ERWEITERTES SOZIALES NETZWERK (MATRIX) ---
+            if ext_enabled:
+                in_ext_scope = False
+                for bit in current_bits:
+                    b_name = getattr(bit, '__name__', '').lower()
+                    if any(kw in b_name for kw in ext_scope_keywords):
+                        in_ext_scope = True
+                        break
+                
+                if in_ext_scope:
+                    if not target_sim_info: target_sim_info = mg_utils.get_sim_by_id(target_id)
+                    
+                    if target_sim_info:
+                        is_target_female = getattr(target_sim_info, 'is_female', False)
+                        target_key = "target_female" if is_target_female else "target_male"
+                        matrix_values = source_config.get(target_key, {})
+                        
+                        target_age_norm = str(getattr(target_sim_info, 'age', '')).split('.')[-1].lower().replace('_', '')
+                        
+                        t_friendship = None
+                        t_romance = None
+                        
+                        for k, v in matrix_values.items():
+                            if type(v) is dict and k.lower().replace('_', '') == target_age_norm:
+                                t_friendship = v.get("friendship", -999)
+                                t_romance = v.get("romance", -999)
+                                break
+                        else:
+                            t_friendship = matrix_values.get("friendship", -999)
+                            t_romance = matrix_values.get("romance", -999)
+                        
+                        if t_friendship == -999: t_friendship = None
+                        if t_romance == -999: t_romance = None
+                        
+                        if t_friendship is not None and f_track:
+                            curr_f = tracker.get_relationship_score(target_id, f_track)
+                            if curr_f < t_friendship:
+                                try: 
+                                    tracker.set_relationship_score(target_id, t_friendship, f_track)
+                                    target_modified = True
+                                except: pass
+                                
+                        if t_romance is not None and r_track:
+                            if getattr(sim_info, 'age', 0) >= 8 and getattr(target_sim_info, 'age', 0) >= 8:
+                                curr_r = tracker.get_relationship_score(target_id, r_track)
+                                if curr_r < t_romance:
+                                    try: 
+                                        tracker.set_relationship_score(target_id, t_romance, r_track)
+                                        target_modified = True
+                                    except: pass
+            
+            if target_modified: modified_count += 1
+
+        # --- 3. POSITIVE HAUSHALTSBEZIEHUNGEN FORCIEREN ---
+        target_f = active_set.get("harmony_friendship", -999)
+        target_r = active_set.get("harmony_romance", -999)
+        target_status = active_set.get("target_relationship_status", "")
+
         for target_sim in targets:
             if target_sim.sim_id == sim_info.sim_id: continue 
+            checked_count += 1
+            target_modified = False
 
-            if target_f != 0 and f_track:
-                try: tracker.set_relationship_score(target_sim.sim_id, target_f, f_track)
-                except: pass
-                
-            if target_r != 0 and r_track:
-                if getattr(sim_info, 'age', 0) >= 8 and getattr(target_sim, 'age', 0) >= 8:
-                    try: tracker.set_relationship_score(target_sim.sim_id, target_r, r_track)
+            if target_f != -999 and f_track:
+                curr_f = tracker.get_relationship_score(target_sim.sim_id, f_track)
+                if curr_f < target_f:
+                    try: 
+                        tracker.set_relationship_score(target_sim.sim_id, target_f, f_track)
+                        target_modified = True
                     except: pass
+                
+            if target_r != -999 and r_track:
+                if getattr(sim_info, 'age', 0) >= 8 and getattr(target_sim, 'age', 0) >= 8:
+                    curr_r = tracker.get_relationship_score(target_sim.sim_id, r_track)
+                    if curr_r < target_r:
+                        try: 
+                            tracker.set_relationship_score(target_sim.sim_id, target_r, r_track)
+                            target_modified = True
+                        except: pass
                     
             if target_status:
-                _apply_status_bit_via_command(sim_info.sim_id, target_sim.sim_id, target_status)
+                if _apply_status_bit_via_command(sim_info.sim_id, target_sim.sim_id, target_status):
+                    target_modified = True
+            
+            if target_modified: modified_count += 1
 
-        log_msg = f"   [Relations] Haushalts-Beziehungen aktualisiert (Scope={remove_negatives_scope}, HH={remove_negatives_household})"
-        mg_logger.log(log_msg, is_debug=True, out=out, force_debug=force_debug)
+        ext_status = "Aktiv" if ext_enabled else "Inaktiv"
+        mg_logger.log(f"   [Relations] {checked_count} geprüft, {modified_count} bearbeitet (HH-Basis: {target_f}/{target_r} | Ext-Matrix: {ext_status})", is_debug=True, out=out, force_debug=force_debug)
+        mg_logger.log(f"   [Relations] Abgeschlossen für {first_name}.", is_debug=True, out=None, force_debug=force_debug)
 
     except Exception as e:
         mg_logger.log(f"[FEHLER Relations] {e}", is_debug=False, out=out, force_debug=force_debug)
@@ -129,5 +204,8 @@ def _apply_status_bit_via_command(sim_id, target_id, status):
     }
     cmd = status_map.get(status)
     if cmd:
-        try: sims4.commands.execute(cmd.format(sim_id, target_id), None)
+        try: 
+            sims4.commands.execute(cmd.format(sim_id, target_id), None)
+            return True
         except: pass
+    return False

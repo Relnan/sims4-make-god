@@ -2,16 +2,15 @@ import os
 import json
 import sims4.commands
 
-# In einer gepackten `.ts4script`-Datei zeigt `__file__` auf den Pfad *im* Archiv.
-# Config, Logs und Dumps muessen aber in den echten Mods-Ordner geschrieben werden.
 MODULE_PATH = os.path.abspath(__file__)
 CURRENT_DIR = os.path.dirname(MODULE_PATH)
 MOD_FOLDER = os.path.dirname(CURRENT_DIR) if CURRENT_DIR.lower().endswith('.ts4script') else CURRENT_DIR
+
 CONFIG_FILE = os.path.join(MOD_FOLDER, 'make_god_config.json')
+TEMPLATE_FILE = os.path.join(MOD_FOLDER, 'make_god_config.json.template')
 
 _config_data = None
 
-# Fallback-Konfiguration als String, damit die Formatierung erhalten bleibt
 DEFAULT_CONFIG_STR = """{
     "_comment_global": "MakeGod Mod Konfiguration. Alle Schluessel, die mit '_' beginnen, werden ignoriert.",
     "language": "de",
@@ -19,7 +18,7 @@ DEFAULT_CONFIG_STR = """{
     "log_mode": "overwrite",
     
     "_comment_dump": "Filtert technische Statistiken heraus, um den Dump sauber zu halten.",
-    "dump_blacklist_keywords": ["_error", "_high", "_low", "caspartid", "index_0", "index_1", "index_2", "index_3", "ww_"],
+    "dump_blacklist_keywords": ["_error", "_high", "_low", "caspartid", "index_0", "index_1", "index_2", "index_3"],
     
     "_comment_sets": "=== DEINE SIMS-EINSTELLUNGEN (SETS) ===",
     "sets": {
@@ -33,33 +32,30 @@ DEFAULT_CONFIG_STR = """{
             "allowed_skills": "Liste mit Namens-Fragmenten, z.B. ['fitness', 'charisma', 'logic']. Leer [] = fallback_skills passend zum Alter verwenden.",
             "master_player_careers": "true/false. Karriere/Schule/Aspirationen fuer spielbare Sims maximieren.",
             "master_npc_careers": "true/false. Wie oben, aber fuer NPCs.",
-            "harmony_friendship": "0 = nicht anfassen. Sonst typischer Bereich -100 bis 100.",
-            "harmony_romance": "0 = nicht anfassen. Sonst typischer Bereich -100 bis 100.",
+            "harmony_friendship": "-999 = nicht anfassen. Sonst typischer Bereich -100 bis 100.",
+            "harmony_romance": "-999 = nicht anfassen. Sonst typischer Bereich -100 bis 100.",
             "target_relationship_status": "Erlaubt: '', 'friend', 'best_friend', 'woohoo_partner', 'significant_other', 'engaged', 'married'.",
             "remove_negative_relations": "true/false. Aktiviert die Bereinigung negativer Beziehungs-Bits (Feinde, Groll, Aengste).",
             "remove_negative_relations_household": "true/false. Wenn true, werden negative Beziehungen zu Sims im selben Haushalt IMMER geloescht.",
-            "remove_negative_relations_scope": "Liste von Beziehungs-Keywords (z.B. 'friend', 'romantic'). Weltweite Sims werden nur bereinigt, wenn sie eines dieser Bits haben.",
+            "remove_negative_relations_scope": "Liste von Beziehungs-Keywords. Weltweite Sims werden nur bereinigt, wenn sie eines dieser Bits haben.",
+            "harmony_extended_network": "Erweiterte Beziehungs-Matrix. Unterscheidet nach source_male/female und Alter. -999 bedeutet ignorieren.",
             "satisfaction_points": "Ganzzahl >= 0. 0 = keine Zusatzpunkte.",
             "add_funds": "Ganzzahl > 0. Nur positive Werte fuegen Geld hinzu.",
             "max_funds": "Obergrenze fuer das Haushaltsgeld nach add_funds.",
             "fill_motives_mode": "Erlaubt: 'all', 'config', 'none'.",
             "freeze_motives": "true/false. Stoppt den Verfall fuer die in motives_to_fill genannten Motive soweit moeglich.",
-            "motives_to_fill": {
-                "keys": "Empfohlene Keys: 'human', 'vampire', 'spellcaster', 'werewolf', 'mermaid'.",
-                "values": "Je Key eine Liste exakter Motiv-/Commodity-Namen wie 'motive_hunger' oder 'commodity_motive_vampire_thirst'."
-            },
-            "remove_all_dislikes": "true/false. Entfernt vollautomatisch alle [DISLIKE] Merkmale vom Sim (z.B. Abneigung gegen Farben/Musik).",
-            "exclude_all": "Traits immer entfernen. Am sichersten mit exaktem internen Namen, z.B. 'trait_Evil'.",
-            "traits_all": "Traits immer hinzufuegen. Am sichersten mit exaktem internen Namen, z.B. 'trait_Savant'.",
-            "traits_occult": "Je Okkult-Typ eine Trait-Liste.",
-            "perks_all": "Perks (Okkulte Faehigkeiten/Ruhm) immer hinzufuegen.",
+            "remove_all_dislikes": "true/false. Entfernt vollautomatisch alle [DISLIKE] Merkmale vom Sim.",
+            "exclude_all": "Traits immer entfernen. Am sichersten mit exaktem internen Namen.",
+            "traits_all": "Traits immer hinzufuegen. Am sichersten mit exaktem internen Namen.",
+            "remove_unlisted_perks": "true/false. Sperrt (lock_perk) alle Perks, die der Sim hat, aber nicht in perks_occult aufgelistet sind.",
+            "perks_exclude_all": "Perks, die explizit gesperrt werden sollen.",
             "perks_occult": "Perks aufgeschluesselt nach Okkult-Typ (z.B. 'vampire', 'spellcaster').",
             "spells_all": "Zaubersprueche und Traenke immer hinzufuegen.",
             "spells_occult": "Zaubersprueche aufgeschluesselt nach Okkult-Typ."
         },
         
         "0": {
-            "_comment_profile": "Ultimate God (Standard Profil) - Inklusive WickedWhims God-Tier und Bestrebungs-Boni",
+            "_comment_profile": "Ultimate God (Standard Profil)",
             "name": "Ultimate God (Standard Profil)",
             "luck": {"value": 100},
             "allow_all_skills": false,
@@ -74,6 +70,50 @@ DEFAULT_CONFIG_STR = """{
             "remove_negative_relations": true,
             "remove_negative_relations_household": true,
             "remove_negative_relations_scope": ["roommate", "key", "friend", "romantic", "woohoo", "married", "significant"],
+            "harmony_extended_network": {
+                "enabled": true,
+                "scopes": ["family", "romantic", "roommate", "key"],
+                "source_male": {
+                    "target_female": { 
+                        "Infant": {"friendship": 70, "romance": -999},
+                        "Toddler": {"friendship": 70, "romance": -999},
+                        "Child": {"friendship": 70, "romance": -999},
+                        "Teen": {"friendship": 100, "romance": 50},
+                        "Young_Adult": {"friendship": 100, "romance": 100},
+                        "Adult": {"friendship": 100, "romance": 70},
+                        "Elder": {"friendship": -999, "romance": -999}
+                    },
+                    "target_male": { 
+                        "Infant": {"friendship": -999, "romance": -999},
+                        "Toddler": {"friendship": -999, "romance": -999},
+                        "Child": {"friendship": -999, "romance": -999},
+                        "Teen": {"friendship": -999, "romance": -999},
+                        "Young_Adult": {"friendship": -999, "romance": -999},
+                        "Adult": {"friendship": -999, "romance": -999},
+                        "Elder": {"friendship": -999, "romance": -999}
+                    }
+                },
+                "source_female": {
+                    "target_female": { 
+                        "Infant": {"friendship": 70, "romance": -999},
+                        "Toddler": {"friendship": 70, "romance": -999},
+                        "Child": {"friendship": 70, "romance": -999},
+                        "Teen": {"friendship": 100, "romance": 50},
+                        "Young_Adult": {"friendship": 100, "romance": 100},
+                        "Adult": {"friendship": 100, "romance": 70},
+                        "Elder": {"friendship": -999, "romance": -999}
+                    },
+                    "target_male": { 
+                        "Infant": {"friendship": -999, "romance": -999},
+                        "Toddler": {"friendship": -999, "romance": -999},
+                        "Child": {"friendship": -999, "romance": -999},
+                        "Teen": {"friendship": -999, "romance": -999},
+                        "Young_Adult": {"friendship": -999, "romance": -999},
+                        "Adult": {"friendship": -999, "romance": -999},
+                        "Elder": {"friendship": -999, "romance": -999}
+                    }
+                }
+            },
             "satisfaction_points": 50000,
             "add_funds": 9999999,
             "max_funds": 9999999,
@@ -108,13 +148,7 @@ DEFAULT_CONFIG_STR = """{
                 "trait_HolidayTradition_FatherWinterBaby", "trait_CreativelyGifted", "trait_MentallyGifted", 
                 "trait_PhysicallyGifted", "trait_SociallyGifted", "trait_ForeverFresh",
                 "trait_Quick_Learner", "trait_High_Metabolism", "trait_EssenceOfFlavor", "trait_Alluring", 
-                "trait_Gregarious", "trait_Muser", "trait_HomeTurf", "trait_Collector", "trait_FamilySim",
-                "TURBODRIVER:WickedWhims_Trait_Attractiveness_Reward_UniqueLooks",
-                "TURBODRIVER:WickedWhims_Trait_BodyHair_STD_NoCrabs",
-                "TURBODRIVER:WickedWhims_Trait_Exhibitionist",
-                "TURBODRIVER:WickedWhims_Trait_Nudity_NoSweat_Reward",
-                "TURBODRIVER:WickedWhims_Trait_STD_BladderBurn_Resistant",
-                "TURBODRIVER:WickedWhims_Trait_Sex_SexuallyAlluring"
+                "trait_Gregarious", "trait_Muser", "trait_HomeTurf", "trait_Collector", "trait_FamilySim"
             ],
             "traits_sex_male": [],
             "traits_sex_female": [],
@@ -125,15 +159,75 @@ DEFAULT_CONFIG_STR = """{
                 "mermaid": [],
                 "human": []
             },
+            "remove_unlisted_perks": true,
+            "perks_exclude_all": [],
+            "perks_exclude_occult": {},
             "perks_all": [],
             "perks_occult": {
-                "spellcaster": [],
-                "vampire": [],
-                "werewolf": []
+                "spellcaster": [
+                    "witchPerks_Prowess_1_KnowledgeIsMagic", "witchPerks_Prowess_2_MoteHound", "witchPerks_Prowess_3_ChargeControl",
+                    "witchPerks_Prowess_4_Hexproof", "witchPerks_Prowess_5_MagicalResonance", "witchPerks_Alchemy_1_BlenderArm",
+                    "witchPerks_Alchemy_2_FrugalCombiner", "witchPerks_Alchemy_3_ExtraChemistry", "witchPerks_Alchemy_4_MixMaster",
+                    "witchPerks_Alchemy_5_PotentPotables", "witchPerks_Spellcasting_1_Discharge", "witchPerks_Spellcasting_2_PowerShunt",
+                    "witchPerks_Spellcasting_3_SpectralReach", "witchPerks_Spellcasting_4_MasterCaster", "witchPerks_Spellcasting_5_MasterDuelist"
+                ],
+                "vampire": [
+                    "vampirePerks_MindPowers_AlluringVisage_1", "vampirePerks_MindPowers_AlluringVisage_2", "vampirePerks_MindPowers_AlluringVisage_3",
+                    "vampirePerks_MindPowers_Command", "vampirePerks_MindPowers_DetectPersonality", "vampirePerks_MindPowers_EmotionalBurst_1",
+                    "vampirePerks_MindPowers_EmotionalBurst_2", "vampirePerks_MindPowers_EmotionalBurst_3", "vampirePerks_MindPowers_Hallucinate",
+                    "vampirePerks_MindPowers_IrresistibleSlumber", "vampirePerks_MindPowers_Mesmerize", "vampirePerks_PersonaPowers_GarlicImmunity",
+                    "vampirePerks_PersonaPowers_LoseHumanity_Hygiene", "vampirePerks_PersonaPowers_NocturnalAffinity_Level1", "vampirePerks_PersonaPowers_NocturnalAffinity_Level2",
+                    "vampirePerks_PersonaPowers_NocturnalAffinity_Level3", "vampirePerks_PersonaPowers_PotentPower_1", "vampirePerks_PersonaPowers_PotentPower_2",
+                    "vampirePerks_PersonaPowers_PotentPower_3", "vampirePerks_PersonaPowers_ResistanceSolis_Level1", "vampirePerks_PersonaPowers_ResistanceSolis_Level2",
+                    "vampirePerks_PersonaPowers_ResistanceSolis_Level3", "vampirePerks_PersonaPowers_TameTheThirst", "vampirePerks_PersonaPowers_VampiricSlumber_Level1",
+                    "vampirePerks_PersonaPowers_VampiricSlumber_Level2", "vampirePerks_PersonaPowers_VampiricSlumber_Level3", "vampirePerks_PersonaPowers_VampiricStrength_Level1",
+                    "vampirePerks_PersonaPowers_VampiricStrength_Level2", "vampirePerks_PersonaPowers_VampiricStrength_Level3", "vampirePerks_SpiritPowers_AlwaysWelcome",
+                    "vampirePerks_SpiritPowers_BatForm", "vampirePerks_SpiritPowers_ManipulateLifeSpirit", "vampirePerks_SpiritPowers_MistForm",
+                    "vampirePerks_SpiritPowers_VampireCreation", "vampirePerks_SpiritPowers_VampireRun"
+                ],
+                "werewolf": [
+                    "werewolfPerks_ApexPredator", "werewolfPerks_CurseBearer", "werewolfPerks_Dormant_LunarEpiphany",
+                    "werewolfPerks_Dormant_TransformationMastery", "werewolfPerks_Dormant_WerewolfDiplomacy", "werewolfPerks_Dormant_WerewolfEmpathy",
+                    "werewolfPerks_Dormant_WerewolfMentorship", "werewolfPerks_EnhancedSenses", "werewolfPerks_Hunter",
+                    "werewolfPerks_HuntingParty", "werewolfPerks_ImmortalWolf", "werewolfPerks_LegacyOfTheLycan",
+                    "werewolfPerks_LunarBlessing", "werewolfPerks_LunarResistance", "werewolfPerks_NaturalHealing",
+                    "werewolfPerks_Nightvision", "werewolfPerks_PackHowl", "werewolfPerks_PersonalGrooming",
+                    "werewolfPerks_Scavenger", "werewolfPerks_SomberHowl", "werewolfPerks_SuperSpeed",
+                    "werewolfPerks_TerritoryMarking", "werewolfPerks_TheWillToResist", "werewolfPerks_Tunneler", "werewolfPerks_WolfNap"
+                ],
+                "fairy": [
+                    "fairyPerks_AgeThemUp", "fairyPerks_BloomPlant", "fairyPerks_BottleMood_1", "fairyPerks_BottleMood_2",
+                    "fairyPerks_BringGnomesToLife", "fairyPerks_CreateSeed", "fairyPerks_CureAilment", "fairyPerks_DetectHarvestables",
+                    "fairyPerks_EmbraceRelationshipChanges", "fairyPerks_EmotionalEnergyFromPositiveSocials", "fairyPerks_EmotionalEnergyFromSiphonNegativeMoods",
+                    "fairyPerks_EmotionalEnergyFromSleep", "fairyPerks_FairyInsight", "fairyPerks_ImprovedForagingAndDuplicateHarvestable",
+                    "fairyPerks_InfluenceRelationship_1", "fairyPerks_InfluenceRelationship_2", "fairyPerks_InfluenceSentiment_1",
+                    "fairyPerks_InfluenceSentiment_2", "fairyPerks_ManipulateObject", "fairyPerks_NurtureNature_1", "fairyPerks_NurtureNature_2",
+                    "fairyPerks_PlantGrowth", "fairyPerks_PlayWithLuck_1", "fairyPerks_PlayWithLuck_2", "fairyPerks_PlayWithTheirMood",
+                    "fairyPerks_ProjectMyMood", "fairyPerks_ResistSpilloverBuffs", "fairyPerks_TurnTargetSimToFairy"
+                ],
+                "ghost": [
+                    "ghostPowersPerks_FearTheNight", "ghostPowersPerks_GhostNap", "ghostPowersPerks_GhostlyMovement",
+                    "ghostPowersPerks_GiveGoodDream", "ghostPowersPerks_ImproveLife", "ghostPowersPerks_InstantMaintenance",
+                    "ghostPowersPerks_InstantMaintenance_2", "ghostPowersPerks_InstantMaintenance_3", "ghostPowersPerks_NurtureLife",
+                    "ghostPowersPerks_PositivePresence", "ghostPowersPerks_RemoveMaterial", "ghostPowersPerks_SaveALife",
+                    "ghostPowersPerks_SpookyWoohoo", "ghostPowersPerks_StrongerStamina", "ghostPowersPerks_SuppressLivingNeeds",
+                    "ghostPowersPerks_SuppressLivingNeeds_2", "ghostPowersPerks_WarmEmbrace"
+                ]
             },
             "spells_all": [],
             "spells_occult": {
-                "spellcaster": []
+                "spellcaster": [
+                    "spell_Practical_1_Clean", "spell_Practical_1_Repair", "spell_Practical_2_Food",
+                    "spell_Practical_2_Plant", "spell_Practical_3_Teleport", "spell_Practical_3_Duplicate",
+                    "spell_Practical_4_GrowPlant", "spell_Practical_4_RiteOfAscension", "spell_Untamed_1_Fire",
+                    "spell_Untamed_2_Lightning", "spell_Untamed_2_SummonGhost", "spell_Untamed_3_Freeze",
+                    "spell_Untamed_3_MindControl", "spell_Untamed_4_Resurrect", "spell_Untamed_4_Decurse",
+                    "spell_Untamed_5_CloneSelf", "spell_Mischief_1_Sadness", "spell_Mischief_1_Confuse",
+                    "spell_Mischief_2_Fight", "spell_Mischief_2_Love", "spell_Mischief_3_Steal",
+                    "spell_Mischief_4_Transform", "recipe_Potion_1_MakeHappy", "recipe_Potion_2_Friendship",
+                    "recipe_Potion_3_Needs", "recipe_Potion_3_Cure", "recipe_Potion_4_Immortality",
+                    "recipe_Potion_5_Clone"
+                ]
             }
         },
         
@@ -152,6 +246,7 @@ DEFAULT_CONFIG_STR = """{
             "remove_negative_relations": false,
             "remove_negative_relations_household": false,
             "remove_negative_relations_scope": [],
+            "harmony_extended_network": {"enabled": false},
             "satisfaction_points": 0,
             "add_funds": 0,
             "max_funds": 250000,
@@ -166,6 +261,9 @@ DEFAULT_CONFIG_STR = """{
             "traits_sex_male": [],
             "traits_sex_female": [],
             "traits_occult": {},
+            "remove_unlisted_perks": false,
+            "perks_exclude_all": [],
+            "perks_exclude_occult": {},
             "perks_all": [],
             "perks_occult": {},
             "spells_all": [],
@@ -182,11 +280,12 @@ DEFAULT_CONFIG_STR = """{
             "master_player_careers": false,
             "master_npc_careers": false,
             "harmony_friendship": 50,
-            "harmony_romance": 0,
+            "harmony_romance": -999,
             "target_relationship_status": "friend",
             "remove_negative_relations": false,
             "remove_negative_relations_household": false,
             "remove_negative_relations_scope": [],
+            "harmony_extended_network": {"enabled": false},
             "satisfaction_points": 0,
             "add_funds": 0,
             "max_funds": 50000,
@@ -201,6 +300,9 @@ DEFAULT_CONFIG_STR = """{
             "traits_sex_male": [],
             "traits_sex_female": [],
             "traits_occult": {},
+            "remove_unlisted_perks": false,
+            "perks_exclude_all": [],
+            "perks_exclude_occult": {},
             "perks_all": [],
             "perks_occult": {},
             "spells_all": [],
@@ -217,11 +319,12 @@ DEFAULT_CONFIG_STR = """{
             "master_player_careers": true,
             "master_npc_careers": false,
             "harmony_friendship": 100,
-            "harmony_romance": 0,
+            "harmony_romance": -999,
             "target_relationship_status": "best_friend",
             "remove_negative_relations": true,
             "remove_negative_relations_household": true,
             "remove_negative_relations_scope": ["roommate", "key", "friend", "romantic", "woohoo", "married", "significant"],
+            "harmony_extended_network": {"enabled": false},
             "satisfaction_points": 5000,
             "add_funds": 0,
             "max_funds": 9999999,
@@ -244,6 +347,9 @@ DEFAULT_CONFIG_STR = """{
             "traits_occult": {
                 "spellcaster": ["trait_Occult_WitchOccult_BloodlineAncient"]
             },
+            "remove_unlisted_perks": false,
+            "perks_exclude_all": [],
+            "perks_exclude_occult": {},
             "perks_all": [],
             "perks_occult": {},
             "spells_all": [],
@@ -260,11 +366,12 @@ DEFAULT_CONFIG_STR = """{
             "master_player_careers": false,
             "master_npc_careers": false,
             "harmony_friendship": 50,
-            "harmony_romance": 0,
+            "harmony_romance": -999,
             "target_relationship_status": "friend",
             "remove_negative_relations": false,
             "remove_negative_relations_household": false,
             "remove_negative_relations_scope": [],
+            "harmony_extended_network": {"enabled": false},
             "satisfaction_points": 0,
             "add_funds": 0,
             "max_funds": 250000,
@@ -279,6 +386,9 @@ DEFAULT_CONFIG_STR = """{
             "traits_sex_male": [],
             "traits_sex_female": [],
             "traits_occult": {},
+            "remove_unlisted_perks": false,
+            "perks_exclude_all": [],
+            "perks_exclude_occult": {},
             "perks_all": [],
             "perks_occult": {},
             "spells_all": [],
@@ -308,8 +418,7 @@ DEFAULT_CONFIG_STR = """{
         "adult": [
             "adultmajor", "adultminor", "skill_fitness", "skill_archery", "skill_crossstitch", 
             "skill_dogtraining", "skill_retail", "skill_hidden_skating", "skill_hidden_vampirelore", 
-            "woohoo_skill", "wickedwhims_skill", "skill_nls", "humanoidrobot", 
-            "skill_child", "skill_toddler", "infant"
+            "woohoo_skill", "humanoidrobot", "skill_child", "skill_toddler", "infant"
         ],
         "child": ["skill_child", "skill_toddler", "infant"],
         "toddler": ["skill_toddler", "infant"],
@@ -318,31 +427,30 @@ DEFAULT_CONFIG_STR = """{
 }"""
 
 def load_config():
-    """Laedt die Konfiguration. Erstellt eine frische Datei, falls sie fehlt oder fehlerhaft ist."""
     global _config_data
-    
+    try:
+        with open(TEMPLATE_FILE, 'w', encoding='utf-8') as f:
+            f.write(DEFAULT_CONFIG_STR)
+    except: pass
+
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
                 _config_data = json.load(f)
             return
-        except Exception as e:
-            # Falls die Datei kaputt ist (z.B. falsches JSON Format), fangen wir den Fehler ab
-            pass
+        except Exception:
+            _config_data = json.loads(DEFAULT_CONFIG_STR)
+            return
             
-    # Falls Datei nicht existiert oder defekt ist, nutzen wir den Standard
     try:
         _config_data = json.loads(DEFAULT_CONFIG_STR)
         with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
             f.write(DEFAULT_CONFIG_STR)
-    except Exception as e:
-        # Als absoluter Notfall (falls der Mod-Ordner schreibgeschützt ist etc.)
+    except Exception:
         _config_data = json.loads(DEFAULT_CONFIG_STR)
 
 def get(key, default=None):
-    """Gibt einen Wert aus der Konfiguration zurueck."""
     global _config_data
     if _config_data is None:
         load_config()
-    
     return _config_data.get(key, default)

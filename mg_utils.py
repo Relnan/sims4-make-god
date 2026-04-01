@@ -9,10 +9,7 @@ def get_sim_by_id(sim_id):
     return sim_info_manager.get(sim_id)
 
 def get_sims_by_name(name_string, active_household=None):
-    """
-    Sucht nach einem Sim ueber den Namen.
-    Gibt ALLE Treffer zurueck, um Mehrdeutigkeiten zu vermeiden.
-    """
+    """Sucht nach einem Sim ueber den Namen."""
     sim_info_manager = services.sim_info_manager()
     if not sim_info_manager: return []
     
@@ -24,8 +21,6 @@ def get_sims_by_name(name_string, active_household=None):
         full_name = f"{fname} {lname}".strip()
         return search_name == fname or search_name == lname or search_name == full_name
 
-    # Wir geben alle Treffer zurueck, damit der Aufrufer (mg_main)
-    # bei len > 1 eine Warnung ausgeben kann.
     all_matches = []
     for sim in sim_info_manager.values():
         if match_name(sim):
@@ -34,28 +29,40 @@ def get_sims_by_name(name_string, active_household=None):
     return all_matches
 
 def get_occult_type(sim_info):
-    """Gibt den Occult-Typ als einfachen String zurueck (vampire, spellcaster, human...)."""
-    occult_str = "human"
-    if hasattr(sim_info, 'occult_tracker') and sim_info.occult_tracker.has_any_occult_or_part_occult_trait():
-        try:
-            ot = sim_info.occult_tracker.occult_types
-            if ot:
-                occult_str = str(list(ot)[0]).split('.')[-1].lower()
-        except:
-            occult_str = "occult"
-    return occult_str
+    """Ermittelt den Okkult-Typ absolut strikt, um False-Positives zu vermeiden."""
+    
+    # 1. Native EA-Methode zuerst
+    try:
+        if hasattr(sim_info, 'occult_tracker') and sim_info.occult_tracker:
+            if sim_info.occult_tracker.has_any_occult_or_part_occult_trait():
+                ot = sim_info.occult_tracker.occult_types
+                if ot:
+                    type_str = str(list(ot)[0]).split('.')[-1].lower()
+                    if type_str and type_str != 'none' and type_str != 'human':
+                        return type_str
+    except: pass
+
+    # 2. Fallback: Trait-Tracker (Nur EXAKTE Basis-Traits prüfen)
+    if hasattr(sim_info, 'trait_tracker') and sim_info.trait_tracker:
+        for trait in sim_info.trait_tracker.equipped_traits:
+            t_name = getattr(trait, '__name__', '').lower()
+            
+            if t_name == 'trait_occultvampire': return 'vampire'
+            if t_name == 'trait_occult_witchoccult': return 'spellcaster'
+            if t_name == 'trait_occultwerewolf': return 'werewolf'
+            if t_name == 'trait_occultmermaid': return 'mermaid'
+            if t_name == 'trait_occultalien': return 'alien'
+            
+            # Mod-Unterstützung für Feen (Fairies)
+            if t_name == 'trait_occult_fairy' or t_name == 'trait_occultfairy' or 'fairy_occult' in t_name: 
+                return 'fairy'
+            
+    return "human"
 
 def is_minor(sim_info):
-    """
-    Prueft extrem robust, ob der Sim ein Kind, Kleinkind, Saeugling oder Baby ist.
-    Sicher gegenkuenftige und alte EA-Patches.
-    """
     try:
-        # Nativer Check
         if hasattr(sim_info, 'is_teen_or_older'):
             return not sim_info.is_teen_or_older
-            
-        # Fallback auf Alters-Enum Namen
         age_name = str(sim_info.age).split('.')[-1].upper()
         minor_ages = ['BABY', 'INFANT', 'TODDLER', 'CHILD']
         return age_name in minor_ages
@@ -63,12 +70,7 @@ def is_minor(sim_info):
         return False
 
 def get_auto_set(sim_info, active_household, option_key="option_1"):
-    """
-    Ermittelt das korrekte Set aus den auto_profiles basierend auf
-    Alter, Geschlecht und ob der Sim spielbar ist.
-    """
     profiles = mg_config.get("auto_profiles", {}).get(option_key, {})
-    
     if not profiles:
         profiles = mg_config.get("auto_profiles", {}).get("option_1", {})
         

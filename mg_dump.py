@@ -84,43 +84,78 @@ def _get_sim_data_md(sim_info):
 
         if bucks_tracker:
             perks_list = []
-            try:
-                unlocked = []
-                if hasattr(bucks_tracker, 'get_unlocked_perks'):
-                    unlocked = bucks_tracker.get_unlocked_perks()
-                elif hasattr(bucks_tracker, '_unlocked_perks'):
-                    unlocked = bucks_tracker._unlocked_perks.keys()
-                    
-                for perk in unlocked:
-                    p_name = getattr(perk, '__name__', str(perk))
-                    perks_list.append(f"- `[PERK]` {p_name}")
-            except: pass
+            perk_manager = services.get_instance_manager(sims4.resources.Types.BUCKS_PERK) if hasattr(sims4.resources.Types, 'BUCKS_PERK') else None
             
+            if perk_manager:
+                for perk_inst in perk_manager.types.values():
+                    try:
+                        # Gezielte Abfrage über alle aktiven Perks
+                        if bucks_tracker.is_perk_unlocked(perk_inst):
+                            p_name = getattr(perk_inst, '__name__', str(perk_inst))
+                            perks_list.append(f"- `[PERK]` {p_name}")
+                    except:
+                        pass
+                        
             perks_list.sort()
             if perks_list: md_lines.extend(perks_list)
-            else: md_lines.append("- *Keine aktiven Perks gefunden (oder Tracker leer).*")
+            else: md_lines.append("- *Keine aktiven Perks gefunden.*")
         else:
             md_lines.append("- *Bucks-Tracker nicht verfügbar.*")
 
-        # --- SPELLS & UNLOCKS ---
+        # --- SPELLS & UNLOCKS (DYNAMIC REFLECTION) ---
         md_lines.append("\n## 🔮 Zaubersprüche & Unlocks")
-        unlock_tracker = getattr(sim_info, 'unlock_tracker', None)
-        if not unlock_tracker and hasattr(sim_info, 'get_unlock_tracker'):
-            try: unlock_tracker = sim_info.get_unlock_tracker()
+        spell_list = []
+        
+        # Alle potenziellen Tracker des Sims dynamisch sammeln
+        potential_trackers = []
+        for attr_name in dir(sim_info):
+            if 'tracker' in attr_name.lower() or 'magic' in attr_name.lower():
+                t_obj = getattr(sim_info, attr_name, None)
+                if t_obj: potential_trackers.append(t_obj)
+        
+        if hasattr(sim_info, 'get_unlock_tracker'):
+            try: potential_trackers.append(sim_info.get_unlock_tracker())
             except: pass
 
-        spell_list = []
-        if unlock_tracker:
-            try:
-                for unlock in unlock_tracker.get_unlocked_items_gen():
-                    u_name = getattr(unlock, '__name__', str(unlock))
-                    if 'spell' in u_name.lower() or 'potion' in u_name.lower() or 'magic' in u_name.lower() or 'recipe' in u_name.lower():
-                        spell_list.append(f"- `[SPELL/RECIPE]` {u_name}")
-            except: pass
-        
+        # 1. Prüfe Zaubersprüche (Snippets)
+        if hasattr(sims4.resources.Types, 'SNIPPET'):
+            snippet_manager = services.get_instance_manager(sims4.resources.Types.SNIPPET)
+            if snippet_manager:
+                for inst in snippet_manager.types.values():
+                    u_name = getattr(inst, '__name__', '')
+                    if 'spell' in u_name.lower() or 'magic' in u_name.lower():
+                        # Frage JEDEN Tracker, ob er den Zauber kennt
+                        for tracker in potential_trackers:
+                            try:
+                                if (hasattr(tracker, 'is_unlocked') and tracker.is_unlocked(inst)) or \
+                                   (hasattr(tracker, 'has_unlock') and tracker.has_unlock(inst)) or \
+                                   (hasattr(tracker, 'has_spell') and tracker.has_spell(inst)):
+                                    spell_list.append(f"- `[SPELL]` {u_name}")
+                                    break
+                            except: pass
+                            
+        # 2. Prüfe Tränke (Recipes)
+        if hasattr(sims4.resources.Types, 'RECIPE'):
+            recipe_manager = services.get_instance_manager(sims4.resources.Types.RECIPE)
+            if recipe_manager:
+                for inst in recipe_manager.types.values():
+                    u_name = getattr(inst, '__name__', '')
+                    if 'potion' in u_name.lower() or 'recipe_magic' in u_name.lower():
+                        # Frage JEDEN Tracker
+                        for tracker in potential_trackers:
+                            try:
+                                if (hasattr(tracker, 'is_unlocked') and tracker.is_unlocked(inst)) or \
+                                   (hasattr(tracker, 'has_unlock') and tracker.has_unlock(inst)):
+                                    spell_list.append(f"- `[POTION]` {u_name}")
+                                    break
+                            except: pass
+                            
+        # Duplikate entfernen (falls mehrere Tracker positiv geantwortet haben)
+        spell_list = list(set(spell_list))
         spell_list.sort()
+        
         if spell_list: md_lines.extend(spell_list)
-        else: md_lines.append("- *Keine relevanten Zauber/Tränke im Unlock-Tracker gefunden.*")
+        else: md_lines.append("- *Keine relevanten Zauber/Tränke gefunden.*")
 
         # --- SKILLS ---
         md_lines.append("\n## 📚 Skills (Fähigkeiten)")
@@ -219,7 +254,7 @@ def execute_dump_to_file(targets, out):
         filepath = _get_dump_filepath(targets)
         
         with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(f"<!-- MakeGod Auto-Dump generiert am {datetime.now().strftime('%d.%m.%Y %H:%M:%S')} -->\n")
+            f.write(f"\n")
             f.write(f"# 🗂️ MakeGod Dump Report\n")
             
             f.write(f"## 📋 Haushaltsübersicht ({len(targets)} Sims)\n")
@@ -250,7 +285,7 @@ def execute_reference_dump(out):
 
     try:
         with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(f"<!-- MakeGod Reference-Dump generiert am {datetime.now().strftime('%d.%m.%Y %H:%M:%S')} -->\n")
+            f.write(f"\n")
             f.write("# 🗂️ MakeGod Master Reference Dump\n")
             f.write("Dieses Dokument enthält **ALLE** aktuell im Spiel geladenen Traits, Perks und Spells (inkl. Mods).\n\n")
 

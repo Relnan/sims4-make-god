@@ -56,7 +56,6 @@ if exist "make_god.ts4script" del "make_god.ts4script"
 echo [+] Bereinige alte Dateien im Mod-Ordner...
 if not exist "%MOD_DEST%" mkdir "%MOD_DEST%"
 del /Q "%MOD_DEST%\make_god.ts4script" 2>nul
-del /Q "%MOD_DEST%\make_god_config.json" 2>nul
 del /Q "%MOD_DEST%\make_god_debug.txt" 2>nul
 del /Q "%MOD_DEST%\rmg_dump_*.txt" 2>nul
 
