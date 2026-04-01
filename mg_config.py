@@ -1,23 +1,25 @@
 import os
 import json
+import sims4.commands
 
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-MOD_FOLDER = os.path.dirname(CURRENT_DIR) if CURRENT_DIR.endswith('.ts4script') else CURRENT_DIR
+# In einer gepackten `.ts4script`-Datei zeigt `__file__` auf den Pfad *im* Archiv.
+# Config, Logs und Dumps muessen aber in den echten Mods-Ordner geschrieben werden.
+MODULE_PATH = os.path.abspath(__file__)
+CURRENT_DIR = os.path.dirname(MODULE_PATH)
+MOD_FOLDER = os.path.dirname(CURRENT_DIR) if CURRENT_DIR.lower().endswith('.ts4script') else CURRENT_DIR
 CONFIG_FILE = os.path.join(MOD_FOLDER, 'make_god_config.json')
 
-DEFAULT_CONFIG = {
+_config_data = None
+
+# Fallback-Konfiguration als String, damit die Formatierung erhalten bleibt
+DEFAULT_CONFIG_STR = """{
     "_comment_global": "MakeGod Mod Konfiguration. Alle Schluessel, die mit '_' beginnen, werden ignoriert.",
-    "_comment_setup": "Diese _Kommentare sind nur Einrichtungs-Hilfen. Du kannst sie beliebig loeschen, aendern oder erweitern.",
-    "_comment_copy_sets": "Eigene Sets: vorhandenes Set kopieren, neue ID vergeben (z.B. '3', '12' oder 'boss_npc') und in auto_profiles zuweisen.",
-
-    "_help_language": "Aktuell vorbereitet: 'de' oder 'en'. Standard ist 'de'.",
     "language": "de",
-
-    "_help_debug_log": "true = detaillierte Logdatei schreiben, false = nur normale Infos/Fehler.",
-    "debug_log": False,
-
-    "_help_log_mode": "Erlaubt: 'overwrite' (pro Spielstart neu) oder 'append' (anhaengen).",
+    "debug_log": false,
     "log_mode": "overwrite",
+    
+    "_comment_dump": "Filtert technische Statistiken heraus, um den Dump sauber zu halten.",
+    "dump_blacklist_keywords": ["_error", "_high", "_low", "caspartid", "index_0", "index_1", "index_2", "index_3", "ww_"],
     
     "_comment_sets": "=== DEINE SIMS-EINSTELLUNGEN (SETS) ===",
     "sets": {
@@ -33,7 +35,10 @@ DEFAULT_CONFIG = {
             "master_npc_careers": "true/false. Wie oben, aber fuer NPCs.",
             "harmony_friendship": "0 = nicht anfassen. Sonst typischer Bereich -100 bis 100.",
             "harmony_romance": "0 = nicht anfassen. Sonst typischer Bereich -100 bis 100.",
-            "target_relationship_status": "Erlaubt: '', 'friend', 'best_friend', 'woohoo_partner', 'significant_other', 'engaged', 'married'. Romantische Statuswerte werden bei Minderjaehrigen/Familien nicht gesetzt.",
+            "target_relationship_status": "Erlaubt: '', 'friend', 'best_friend', 'woohoo_partner', 'significant_other', 'engaged', 'married'.",
+            "remove_negative_relations": "true/false. Aktiviert die Bereinigung negativer Beziehungs-Bits (Feinde, Groll, Aengste).",
+            "remove_negative_relations_household": "true/false. Wenn true, werden negative Beziehungen zu Sims im selben Haushalt IMMER geloescht.",
+            "remove_negative_relations_scope": "Liste von Beziehungs-Keywords (z.B. 'friend', 'romantic'). Weltweite Sims werden nur bereinigt, wenn sie eines dieser Bits haben.",
             "satisfaction_points": "Ganzzahl >= 0. 0 = keine Zusatzpunkte.",
             "add_funds": "Ganzzahl > 0. Nur positive Werte fuegen Geld hinzu.",
             "max_funds": "Obergrenze fuer das Haushaltsgeld nach add_funds.",
@@ -43,59 +48,51 @@ DEFAULT_CONFIG = {
                 "keys": "Empfohlene Keys: 'human', 'vampire', 'spellcaster', 'werewolf', 'mermaid'.",
                 "values": "Je Key eine Liste exakter Motiv-/Commodity-Namen wie 'motive_hunger' oder 'commodity_motive_vampire_thirst'."
             },
+            "remove_all_dislikes": "true/false. Entfernt vollautomatisch alle [DISLIKE] Merkmale vom Sim (z.B. Abneigung gegen Farben/Musik).",
             "exclude_all": "Traits immer entfernen. Am sichersten mit exaktem internen Namen, z.B. 'trait_Evil'.",
-            "exclude_sex_male": "Wie exclude_all, aber nur fuer maennliche Sims.",
-            "exclude_sex_female": "Wie exclude_all, aber nur fuer weibliche Sims.",
             "traits_all": "Traits immer hinzufuegen. Am sichersten mit exaktem internen Namen, z.B. 'trait_Savant'.",
-            "traits_sex_male": "Zusatz-Traits nur fuer maennliche Sims.",
-            "traits_sex_female": "Zusatz-Traits nur fuer weibliche Sims.",
-            "traits_occult": {
-                "keys": "Empfohlene Keys: 'human', 'vampire', 'spellcaster', 'werewolf', 'mermaid'.",
-                "values": "Je Okkult-Typ eine Trait-Liste. Nicht benoetigte Keys koennen leer bleiben."
-            }
+            "traits_occult": "Je Okkult-Typ eine Trait-Liste.",
+            "perks_all": "Perks (Okkulte Faehigkeiten/Ruhm) immer hinzufuegen.",
+            "perks_occult": "Perks aufgeschluesselt nach Okkult-Typ (z.B. 'vampire', 'spellcaster').",
+            "spells_all": "Zaubersprueche und Traenke immer hinzufuegen.",
+            "spells_occult": "Zaubersprueche aufgeschluesselt nach Okkult-Typ."
         },
-        "_comment_set_copy": "Zum Erstellen eigener Profile einfach einen vorhandenen Block kopieren und die Werte aendern.",
+        
         "0": {
-            "_comment_profile": "Beispiel fuer ein komplettes God-Set fuer spielbare Erwachsene.",
-            "_comment_name": "Freier Anzeigename fuer dieses Set.",
+            "_comment_profile": "Ultimate God (Standard Profil) - Inklusive WickedWhims God-Tier und Bestrebungs-Boni",
             "name": "Ultimate God (Standard Profil)",
-            "_comment_luck": "Typisch -100 bis 100. 100 = maximales Glueck, 0 = neutral.",
             "luck": {"value": 100},
-            "_comment_skills": "allow_all_skills ueberschreibt die Filterung; bei leerer allowed_skills-Liste greifen fallback_skills.",
-            "allow_all_skills": False,
-            "max_player_skills": True,
-            "max_npc_skills": False,
+            "allow_all_skills": false,
+            "max_player_skills": true,
+            "max_npc_skills": false,
             "allowed_skills": [],
-            "_comment_careers": "true = Karriere/Schule/Aspirationen forcieren.",
-            "master_player_careers": True,
-            "master_npc_careers": False,
-            "_comment_relations": "Status erlaubt: '', friend, best_friend, woohoo_partner, significant_other, engaged, married.",
+            "master_player_careers": true,
+            "master_npc_careers": false,
             "harmony_friendship": 100,
             "harmony_romance": 100,
             "target_relationship_status": "woohoo_partner",
-            "_comment_rewards": "Ganzzahlen. add_funds wirkt nur > 0; max_funds begrenzt das Ergebnis.",
+            "remove_negative_relations": true,
+            "remove_negative_relations_household": true,
+            "remove_negative_relations_scope": ["roommate", "key", "friend", "romantic", "woohoo", "married", "significant"],
             "satisfaction_points": 50000,
             "add_funds": 9999999,
             "max_funds": 9999999,
-            "_comment_motives": "fill_motives_mode: 'all', 'config' oder 'none'. Bei 'config' werden nur die unten genannten Motive gezielt gefuellt.",
             "fill_motives_mode": "all",
-            "freeze_motives": True,
+            "freeze_motives": true,
             "motives_to_fill": {
-                "_comment_occult_keys": "Empfohlen: human, vampire, spellcaster, werewolf, mermaid.",
                 "vampire": ["commodity_motive_vampire_power", "commodity_motive_vampire_thirst", "motive_hygiene", "motive_social", "motive_fun"],
                 "spellcaster": ["motive_hunger", "motive_energy", "motive_bladder", "motive_hygiene", "motive_social", "motive_fun"],
                 "werewolf": ["motive_hunger", "motive_energy", "motive_bladder", "motive_hygiene", "motive_social", "motive_fun"],
                 "mermaid": ["motive_hydration", "motive_hunger", "motive_energy", "motive_bladder", "motive_social", "motive_fun"],
                 "human": ["motive_hunger", "motive_energy", "motive_bladder", "motive_hygiene", "motive_social", "motive_fun"]
             },
-            "_comment_traits_remove": "Traits per internem Namen entfernen; leere Listen [] lassen den Bereich unveraendert.",
+            "remove_all_dislikes": true,
             "exclude_all": [
                 "trait_Evil", "trait_Lazy", "trait_HotHeaded", "trait_Gloomy", "trait_Clumsy", "trait_Jealous", 
                 "trait_Slob", "trait_Unflirty", "trait_Insane", "trait_Squeamish", "trait_Mean"
             ],
             "exclude_sex_male": [],
             "exclude_sex_female": [],
-            "_comment_traits_add": "Traits per internem Namen hinzufuegen; traits_occult wird nur beim passenden Okkult-Typ genutzt.",
             "traits_all": [
                 "trait_AlwaysWelcome", "trait_Temperature_ColdAcclimation", "trait_GymRat", "trait_Temperature_HeatAcclimation",
                 "trait_Observant", "trait_SpeedCleaner", "trait_Waterproof", "trait_NewInTown_InspiredExplorer",
@@ -109,97 +106,131 @@ DEFAULT_CONFIG = {
                 "trait_ForeverFull", "trait_NeverWeary", "trait_Legendary", "trait_FreshChef", 
                 "trait_OneWithNature", "trait_EpicPoet", "trait_Doctor_SicknessResistant", 
                 "trait_HolidayTradition_FatherWinterBaby", "trait_CreativelyGifted", "trait_MentallyGifted", 
-                "trait_PhysicallyGifted", "trait_SociallyGifted", "trait_ForeverFresh"
+                "trait_PhysicallyGifted", "trait_SociallyGifted", "trait_ForeverFresh",
+                "trait_Quick_Learner", "trait_High_Metabolism", "trait_EssenceOfFlavor", "trait_Alluring", 
+                "trait_Gregarious", "trait_Muser", "trait_HomeTurf", "trait_Collector", "trait_FamilySim",
+                "TURBODRIVER:WickedWhims_Trait_Attractiveness_Reward_UniqueLooks",
+                "TURBODRIVER:WickedWhims_Trait_BodyHair_STD_NoCrabs",
+                "TURBODRIVER:WickedWhims_Trait_Exhibitionist",
+                "TURBODRIVER:WickedWhims_Trait_Nudity_NoSweat_Reward",
+                "TURBODRIVER:WickedWhims_Trait_STD_BladderBurn_Resistant",
+                "TURBODRIVER:WickedWhims_Trait_Sex_SexuallyAlluring"
             ],
             "traits_sex_male": [],
             "traits_sex_female": [],
             "traits_occult": {
-                "_comment_occult_trait_keys": "Nur passende Okkult-Typen befuellen; nicht benoetigte Keys duerfen leer bleiben.",
                 "spellcaster": ["trait_Occult_WitchOccult_BloodlineAncient", "trait_Cauldron_Potion_Immortality"],
                 "vampire": ["trait_TheKnack"], 
                 "werewolf": ["trait_OccultWerewolf_Immortal", "trait_OccultWerewolf_Temperaments_Lunar_Resistance"], 
                 "mermaid": [],
                 "human": []
+            },
+            "perks_all": [],
+            "perks_occult": {
+                "spellcaster": [],
+                "vampire": [],
+                "werewolf": []
+            },
+            "spells_all": [],
+            "spells_occult": {
+                "spellcaster": []
             }
         },
         
         "1": {
-            "_comment_profile": "Beispiel fuer einen romantischen NPC-/Partner-Basisbauplan.",
             "name": "Mortal Lover (NPC Basis)",
             "luck": {"value": 0},
-            "allow_all_skills": False,
-            "max_player_skills": False,
-            "max_npc_skills": False,
+            "allow_all_skills": false,
+            "max_player_skills": false,
+            "max_npc_skills": false,
             "allowed_skills": ["fitness", "charisma", "logic"],
-            "master_player_careers": False,
-            "master_npc_careers": False,
+            "master_player_careers": false,
+            "master_npc_careers": false,
             "harmony_friendship": 100,
             "harmony_romance": 100,
             "target_relationship_status": "significant_other",
+            "remove_negative_relations": false,
+            "remove_negative_relations_household": false,
+            "remove_negative_relations_scope": [],
             "satisfaction_points": 0,
             "add_funds": 0,
             "max_funds": 250000,
             "fill_motives_mode": "none",
-            "freeze_motives": False,
+            "freeze_motives": false,
             "motives_to_fill": {},
+            "remove_all_dislikes": false,
             "exclude_all": ["trait_Unflirty", "trait_Jealous", "trait_Evil", "trait_Mean"],
             "exclude_sex_male": [],
             "exclude_sex_female": [],
             "traits_all": ["trait_GreatKisser", "trait_Carefree"],
             "traits_sex_male": [],
             "traits_sex_female": [],
-            "traits_occult": {}
+            "traits_occult": {},
+            "perks_all": [],
+            "perks_occult": {},
+            "spells_all": [],
+            "spells_occult": {}
         },
 
         "2": {
-            "_comment_profile": "Neutrales NPC-Profil ohne grosse Eingriffe.",
             "name": "Vanilla NPC",
             "luck": {"value": 0},
-            "allow_all_skills": False,
-            "max_player_skills": False,
-            "max_npc_skills": False,
+            "allow_all_skills": false,
+            "max_player_skills": false,
+            "max_npc_skills": false,
             "allowed_skills": [],
-            "master_player_careers": False,
-            "master_npc_careers": False,
+            "master_player_careers": false,
+            "master_npc_careers": false,
             "harmony_friendship": 50,
             "harmony_romance": 0,
             "target_relationship_status": "friend",
+            "remove_negative_relations": false,
+            "remove_negative_relations_household": false,
+            "remove_negative_relations_scope": [],
             "satisfaction_points": 0,
             "add_funds": 0,
             "max_funds": 50000,
             "fill_motives_mode": "none",
-            "freeze_motives": False,
+            "freeze_motives": false,
             "motives_to_fill": {},
+            "remove_all_dislikes": false,
             "exclude_all": [],
             "exclude_sex_male": [],
             "exclude_sex_female": [],
             "traits_all": [],
             "traits_sex_male": [],
             "traits_sex_female": [],
-            "traits_occult": {}
+            "traits_occult": {},
+            "perks_all": [],
+            "perks_occult": {},
+            "spells_all": [],
+            "spells_occult": {}
         },
 
         "10": {
-            "_comment_profile": "Kinderprofil fuer gespielte Haushaltskinder.",
             "name": "Blessed Child (Gespieltes Kind)",
             "luck": {"value": 100},
-            "allow_all_skills": False,
-            "max_player_skills": True,
-            "max_npc_skills": False,
+            "allow_all_skills": false,
+            "max_player_skills": true,
+            "max_npc_skills": false,
             "allowed_skills": [],
-            "master_player_careers": True,
-            "master_npc_careers": False,
+            "master_player_careers": true,
+            "master_npc_careers": false,
             "harmony_friendship": 100,
             "harmony_romance": 0,
             "target_relationship_status": "best_friend",
+            "remove_negative_relations": true,
+            "remove_negative_relations_household": true,
+            "remove_negative_relations_scope": ["roommate", "key", "friend", "romantic", "woohoo", "married", "significant"],
             "satisfaction_points": 5000,
             "add_funds": 0,
             "max_funds": 9999999,
             "fill_motives_mode": "all",
-            "freeze_motives": True,
+            "freeze_motives": true,
             "motives_to_fill": {
                 "human": ["motive_hunger", "motive_energy", "motive_bladder", "motive_hygiene", "motive_social", "motive_fun"]
             },
+            "remove_all_dislikes": true,
             "exclude_all": ["trait_Mean", "trait_Gloomy", "trait_Insane", "trait_Clumsy", "trait_Evil"],
             "exclude_sex_male": [],
             "exclude_sex_female": [],
@@ -212,64 +243,68 @@ DEFAULT_CONFIG = {
             "traits_sex_female": [],
             "traits_occult": {
                 "spellcaster": ["trait_Occult_WitchOccult_BloodlineAncient"]
-            }
+            },
+            "perks_all": [],
+            "perks_occult": {},
+            "spells_all": [],
+            "spells_occult": {}
         },
         
         "11": {
-            "_comment_profile": "Normales Kinderprofil fuer NPC-Kinder.",
             "name": "NPC Child (Normal)",
             "luck": {"value": 0},
-            "allow_all_skills": False,
-            "max_player_skills": False,
-            "max_npc_skills": False,
+            "allow_all_skills": false,
+            "max_player_skills": false,
+            "max_npc_skills": false,
             "allowed_skills": [],
-            "master_player_careers": False,
-            "master_npc_careers": False,
+            "master_player_careers": false,
+            "master_npc_careers": false,
             "harmony_friendship": 50,
             "harmony_romance": 0,
             "target_relationship_status": "friend",
+            "remove_negative_relations": false,
+            "remove_negative_relations_household": false,
+            "remove_negative_relations_scope": [],
             "satisfaction_points": 0,
             "add_funds": 0,
             "max_funds": 250000,
             "fill_motives_mode": "none",
-            "freeze_motives": False,
+            "freeze_motives": false,
             "motives_to_fill": {},
+            "remove_all_dislikes": false,
             "exclude_all": ["trait_Mean", "trait_Evil"],
             "exclude_sex_male": [],
             "exclude_sex_female": [],
             "traits_all": [],
             "traits_sex_male": [],
             "traits_sex_female": [],
-            "traits_occult": {}
+            "traits_occult": {},
+            "perks_all": [],
+            "perks_occult": {},
+            "spells_all": [],
+            "spells_occult": {}
         }
     },
 
-    "_comment_auto_profiles": "Ordnet die UI-/Cheat-Optionen den Set-IDs zu. Jeder Wert muss auf eine existierende ID aus 'sets' zeigen.",
     "auto_profiles": {
-        "_comment_roles": "Rollen: adult_playable_male, adult_playable_female, adult_npc_male, adult_npc_female, child_playable, child_npc.",
         "option_1": {
-            "_comment": "Standard fuer UI Option 1 sowie 'auto'.",
             "adult_playable_male": "0", "adult_playable_female": "0", 
             "adult_npc_male": "1", "adult_npc_female": "1",
             "child_playable": "10", "child_npc": "11"
         },
         "option_2": {
-            "_comment": "Alternative fuer UI Option 2.",
             "adult_playable_male": "0", "adult_playable_female": "0", 
             "adult_npc_male": "2", "adult_npc_female": "2",
             "child_playable": "10", "child_npc": "11"
         },
         "option_3": {
-            "_comment": "Alternative fuer UI Option 3.",
             "adult_playable_male": "0", "adult_playable_female": "0", 
             "adult_npc_male": "1", "adult_npc_female": "1",
             "child_playable": "10", "child_npc": "11"
         }
     },
 
-    "_comment_fallback_skills": "Wird genutzt, wenn in einem Set 'allowed_skills': [] leer ist. Die Eintraege sind Namens-Fragmente, keine strengen Exakt-Treffer.",
     "fallback_skills": {
-        "_comment_age_keys": "Erlaubte Alters-Keys: adult, child, toddler, infant.",
         "adult": [
             "adultmajor", "adultminor", "skill_fitness", "skill_archery", "skill_crossstitch", 
             "skill_dogtraining", "skill_retail", "skill_hidden_skating", "skill_hidden_vampirelore", 
@@ -280,38 +315,34 @@ DEFAULT_CONFIG = {
         "toddler": ["skill_toddler", "infant"],
         "infant": ["infant"]
     }
-}
-
-ACTIVE_CONFIG = {}
-
-def _strip_comments(data):
-    if isinstance(data, dict):
-        cleaned = {}
-        for k, v in data.items():
-            if str(k).startswith('_'): continue
-            cleaned[k] = _strip_comments(v)
-        return cleaned
-    elif isinstance(data, list):
-        return [_strip_comments(item) for item in data]
-    else:
-        return data
+}"""
 
 def load_config():
-    global ACTIVE_CONFIG
-    raw_data = DEFAULT_CONFIG.copy()
+    """Laedt die Konfiguration. Erstellt eine frische Datei, falls sie fehlt oder fehlerhaft ist."""
+    global _config_data
     
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-                raw_data = json.load(f)
-        except Exception as e: pass 
-    else:
-        try:
-            with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-                json.dump(DEFAULT_CONFIG, f, indent=4)
-        except: pass
+                _config_data = json.load(f)
+            return
+        except Exception as e:
+            # Falls die Datei kaputt ist (z.B. falsches JSON Format), fangen wir den Fehler ab
+            pass
             
-    ACTIVE_CONFIG = _strip_comments(raw_data)
+    # Falls Datei nicht existiert oder defekt ist, nutzen wir den Standard
+    try:
+        _config_data = json.loads(DEFAULT_CONFIG_STR)
+        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+            f.write(DEFAULT_CONFIG_STR)
+    except Exception as e:
+        # Als absoluter Notfall (falls der Mod-Ordner schreibgeschützt ist etc.)
+        _config_data = json.loads(DEFAULT_CONFIG_STR)
 
 def get(key, default=None):
-    return ACTIVE_CONFIG.get(key, default)
+    """Gibt einen Wert aus der Konfiguration zurueck."""
+    global _config_data
+    if _config_data is None:
+        load_config()
+    
+    return _config_data.get(key, default)

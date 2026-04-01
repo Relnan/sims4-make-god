@@ -36,6 +36,9 @@ def log(message, is_debug=False, out=None, force_debug=False):
     except:
         pass
         
-    # 2. In die Spiel-Konsole schreiben
-    if out and debug_enabled:
-        out(message)
+    # 2. Infos/Fehler immer im Spiel zeigen, Debug nur bei aktivem Debug-Modus
+    if out and (debug_enabled or not is_debug):
+        try:
+            out(message)
+        except:
+            pass

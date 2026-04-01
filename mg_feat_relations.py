@@ -1,87 +1,113 @@
+import sims4.commands
+import mg_config
+import mg_logger
+import mg_utils
 import services
 import sims4.resources
-import mg_config
-import mg_utils
-import mg_logger
-
-STATUS_HIERARCHY = {
-    'married': {'level': 6, 'bit_id': 15803},
-    'engaged': {'level': 5, 'bit_id': 15794},
-    'significant_other': {'level': 4, 'bit_id': 15822},
-    'woohoo_partner': {'level': 3, 'bit_id': 250375},
-    'best_friend': {'level': 2, 'bit_id': 15792},
-    'friend': {'level': 1, 'bit_id': 15797}
-}
-
-def _get_highest_current_status_level(tracker, target_sim_id):
-    current_bits = tracker.get_all_bits(target_sim_id)
-    highest_level = 0
-    for bit in current_bits:
-        bit_id = getattr(bit, 'guid64', 0)
-        for status_name, data in STATUS_HIERARCHY.items():
-            if data['bit_id'] == bit_id and data['level'] > highest_level:
-                highest_level = data['level']
-    return highest_level
 
 def apply_relations(sim_info, set_id, out, force_debug):
-    active_set = mg_config.get("sets", {}).get(str(set_id), {})
-    f_val = active_set.get("harmony_friendship", 0)
-    r_val = active_set.get("harmony_romance", 0)
-    target_status = active_set.get("target_relationship_status", "").lower()
-    
-    if f_val == 0 and r_val == 0 and not target_status: return
-
-    stat_manager = services.get_instance_manager(sims4.resources.Types.STATISTIC)
-    bit_manager = services.get_instance_manager(sims4.resources.Types.RELATIONSHIP_BIT)
-    if not stat_manager or not bit_manager: return
-    
-    f_track = stat_manager.get(16650)
-    r_track = stat_manager.get(16651)
-    
-    count = 0
-    is_source_minor = mg_utils.is_minor(sim_info)
-
-    for member in tuple(sim_info.household):
-        if member.sim_id == sim_info.sim_id: continue
-            
-        is_target_minor = mg_utils.is_minor(member)
-        tracker = sim_info.relationship_tracker
+    """Setzt Freundschaft, Romantik und bereinigt negative Beziehungen nach Scope."""
+    try:
+        active_set = mg_config.get("sets", {}).get(str(set_id), {})
+        if not active_set: return
         
-        try:
-            is_family = False
-            bits = tracker.get_all_bits(member.sim_id)
-            for bit in bits:
-                bit_name = getattr(bit, '__name__', '').lower()
-                if 'family' in bit_name or 'parent' in bit_name or 'sibling' in bit_name or 'child' in bit_name:
-                    is_family = True
-                    break
+        tracker = getattr(sim_info, 'relationship_tracker', None)
+        if not tracker: return
 
-            if target_status in STATUS_HIERARCHY:
-                target_data = STATUS_HIERARCHY[target_status]
-                current_level = _get_highest_current_status_level(tracker, member.sim_id)
+        # Hole Haushaltsmitglieder intern, um die Signatur für mg_main.py nicht zu brechen
+        targets = list(sim_info.household) if getattr(sim_info, 'household', None) else [sim_info]
+
+        # --- 1. NEGATIVE BEZIEHUNGEN BEREINIGEN (GETRENNT NACH HAUSHALT & SCOPE) ---
+        remove_negatives_scope = active_set.get("remove_negative_relations", False)
+        remove_negatives_household = active_set.get("remove_negative_relations_household", False)
+        
+        if remove_negatives_scope or remove_negatives_household:
+            # Lade Scope sicher
+            raw_scope = active_set.get("remove_negative_relations_scope", 
+                                            ["roommate", "key", "friend", "romantic", "woohoo", "married", "significant"])
+            if not raw_scope: raw_scope = []
+            scope_keywords = [str(s).lower() for s in raw_scope]
+
+            negative_keywords = ['enemy', 'despised', 'bitter', 'grudge', 'hate', 'furious', 
+                                 'awkward', 'creepy', 'bad', 'negative', 'divorced', 'breakup', 
+                                 'cheated', 'resent', 'hurt', 'hostile', 'angry', 'dislike', 
+                                 'frustrated', 'fear']
+
+            for target_id in tuple(tracker.target_sim_gen()):
+                target_sim_info = mg_utils.get_sim_by_id(target_id)
+                is_in_scope = False
                 
-                if current_level < target_data['level']:
-                    if target_data['level'] >= 3 and (is_source_minor or is_target_minor): pass
-                    elif target_data['level'] >= 3 and is_family: pass
-                    else:
-                        try:
-                            bit_instance = bit_manager.get(target_data['bit_id'])
-                            if bit_instance: tracker.add_relationship_bit(member.sim_id, bit_instance)
-                        except: pass
+                # A) Expliziter Haushalts-Check über die Engine-ID
+                if remove_negatives_household and target_sim_info:
+                    if getattr(target_sim_info, 'household_id', None) == getattr(sim_info, 'household_id', None):
+                        is_in_scope = True
+                
+                # B) Scope-Check über echte Beziehungs-Bits
+                current_bits = tuple(tracker.get_all_bits(target_id))
+                if not is_in_scope and remove_negatives_scope:
+                    for bit in current_bits:
+                        b_name = getattr(bit, '__name__', '').lower()
+                        if any(kw in b_name for kw in scope_keywords):
+                            is_in_scope = True
+                            break
+                
+                # C) Wenn der Sim qualifiziert ist -> Filtere alle negativen Bits und Ängste heraus!
+                if is_in_scope:
+                    for bit in current_bits:
+                        b_name = getattr(bit, '__name__', '').lower()
+                        if any(kw in b_name for kw in negative_keywords):
+                            try:
+                                tracker.remove_bit(target_id, bit)
+                            except: pass
 
-            if f_track and f_val != 0:
-                current_f = tracker.get_relationship_score(member.sim_id, f_track)
-                if f_val < 0 or f_val > current_f:
-                    tracker.set_relationship_score(member.sim_id, f_val, f_track)
-                    count += 1
-            
-            if r_track and r_val != 0:
-                if not (is_source_minor or is_target_minor):
-                    current_r = tracker.get_relationship_score(member.sim_id, r_track)
-                    if r_val < 0 or r_val > current_r:
-                        try: tracker.set_relationship_score(member.sim_id, r_val, r_track)
-                        except: pass
+        # --- 2. POSITIVE HAUSHALTSBEZIEHUNGEN FORCIEREN ---
+        target_f = active_set.get("harmony_friendship", 0)
+        target_r = active_set.get("harmony_romance", 0)
+        target_status = active_set.get("target_relationship_status", "")
+
+        if target_f == 0 and target_r == 0 and not target_status:
+            return
+
+        skill_manager = services.get_instance_manager(sims4.resources.Types.STATISTIC)
+        f_track = skill_manager.get(16650) if skill_manager else None
+        r_track = skill_manager.get(16651) if skill_manager else None
+
+        for target_sim in targets:
+            # Nicht auf sich selbst anwenden
+            if target_sim.sim_id == sim_info.sim_id: continue 
+
+            # Freundschafts-Wert setzen
+            if target_f != 0 and f_track:
+                try: tracker.set_relationship_score(target_sim.sim_id, target_f, f_track)
+                except: pass
+                
+            # Romantik-Wert setzen (Nur wenn beide mind. Teenager [Alterstufe 8+] sind)
+            if target_r != 0 and r_track:
+                if getattr(sim_info, 'age', 0) >= 8 and getattr(target_sim, 'age', 0) >= 8:
+                    try: tracker.set_relationship_score(target_sim.sim_id, target_r, r_track)
+                    except: pass
                     
-        except: pass
+            # Beziehungs-Status per Command setzen
+            if target_status:
+                _apply_status_bit_via_command(sim_info.sim_id, target_sim.sim_id, target_status)
 
-    mg_logger.log(f"   [Beziehungen] Angepasst mit {count} Haushaltsmitgliedern.", is_debug=True, out=out, force_debug=force_debug)
+        log_msg = f"   [Relations] Haushalts-Beziehungen aktualisiert (Scope={remove_negatives_scope}, HH={remove_negatives_household})"
+        mg_logger.log(log_msg, is_debug=True, out=out, force_debug=force_debug)
+
+    except Exception as e:
+        mg_logger.log(f"[FEHLER Relations] {e}", is_debug=False, out=out, force_debug=force_debug)
+
+def _apply_status_bit_via_command(sim_id, target_id, status):
+    """Mappt einfache Config-Namen auf EA-Konsolenbefehle."""
+    status_map = {
+        "friend": "relationship.add_bit {0} {1} relbit_Friend",
+        "best_friend": "relationship.add_bit {0} {1} relbit_BestFriends",
+        "woohoo_partner": "relationship.add_bit {0} {1} RomanticCombo_WoohooPartners",
+        "significant_other": "relationship.add_bit {0} {1} RomanticCombo_SignificantOther",
+        "engaged": "relationship.add_bit {0} {1} RomanticCombo_Engaged",
+        "married": "relationship.add_bit {0} {1} RomanticCombo_Married"
+    }
+    cmd = status_map.get(status)
+    if cmd:
+        try: sims4.commands.execute(cmd.format(sim_id, target_id), None)
+        except: pass
