@@ -27,12 +27,21 @@ def apply_traits(sim_info, set_id, out, force_debug):
     else:
         traits_to_remove.extend(active_set.get("exclude_sex_male", []))
 
-    # Dislikes (Abneigungen) automatisch entfernen
-    if active_set.get("remove_all_dislikes", False):
+    # Dynamische System-Bereinigung (Dislikes & Fears)
+    remove_dislikes = active_set.get("remove_all_dislikes", False)
+    remove_negatives = active_set.get("remove_negative_relations", False)
+    
+    if remove_dislikes or remove_negatives:
         if hasattr(sim_info, 'trait_tracker') and sim_info.trait_tracker:
             for trait in tuple(sim_info.trait_tracker.equipped_traits):
                 trait_name = getattr(trait, '__name__', '').lower()
-                if 'simpreference_dislikes' in trait_name or 'simpreference_hates' in trait_name:
+                
+                # Kategorien ermitteln
+                is_dislike = 'simpreference_dislikes' in trait_name or 'simpreference_hates' in trait_name
+                is_fear = 'trait_fear' in trait_name or 'trait_phobia' in trait_name
+                
+                # Zuweisen zur Blacklist basierend auf der Konfiguration
+                if (remove_dislikes and is_dislike) or (remove_negatives and is_fear):
                     raw_name = getattr(trait, '__name__', '')
                     if raw_name:
                         traits_to_remove.append(raw_name)
