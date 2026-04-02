@@ -13,6 +13,7 @@ set PY_VER=python37
 set PYTHON_EXE=%UserProfile%\scoop\apps\%PY_VER%\current\python.exe
 set SEVEN_ZIP=C:\Program Files\7-Zip\7z.exe
 set MOD_DEST=%UserProfile%\Documents\Electronic Arts\The Sims 4\Mods\Meine eigenen
+set GAME_DEST=%UserProfile%\Documents\Electronic Arts\The Sims 4
 set ISLC_EXE=%UserProfile%\Documents\ISLC v1.0.3.7\Intelligent standby list cleaner ISLC.exe
 :: ==========================================
 
@@ -58,6 +59,9 @@ if not exist "%MOD_DEST%" mkdir "%MOD_DEST%"
 del /Q "%MOD_DEST%\make_god.ts4script" 2>nul
 del /Q "%MOD_DEST%\make_god_debug.txt" 2>nul
 del /Q "%MOD_DEST%\rmg_dump_*.txt" 2>nul
+del /Q "%GAME_DEST%\localsimtexturecache.package" 2>nul
+del /Q "%GAME_DEST%\localthumbcache.package" 2>nul
+del /Q "%GAME_DEST%\avatarcache.package" 2>nul
 
 :: [6] Deployment
 echo [+] Kopiere Mod nach: %MOD_DEST%
