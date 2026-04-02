@@ -9,6 +9,7 @@ import mg_queue
 import mg_dump
 
 # Erlaubt benutzerfreundliche Eingaben wie option1/option_1/opt1
+# und skaliert fuer beliebige Nummern (z.B. option_12).
 def _normalize_selector(value):
     raw = str(value).lower().strip()
     m = re.match(r'^(?:option_?|opt)(\d+)$', raw)
@@ -16,14 +17,13 @@ def _normalize_selector(value):
         return f"option_{m.group(1)}"
     return raw
 
-# --- NEU: ZENTRALER ARGUMENT-PARSER ---
+# --- ZENTRALER ARGUMENT-PARSER ---
 def _parse_args_and_debug(args):
     """Filtert das Schlüsselwort 'debug' ausschliesslich am Ende der Eingabe heraus."""
     args_list = [str(a).lower().strip() for a in args]
     force_debug = False
     
     # Prüft und entfernt 'debug' nur, wenn es das allerletzte Argument ist.
-    # So bleiben Namen wie "Male Debug" (in Quotes) oder "Debug Mueller" (als Mittelwort) intakt.
     while args_list and args_list[-1] == 'debug':
         force_debug = True
         args_list.pop()
@@ -37,6 +37,7 @@ mg_config.load_config()
 @sims4.commands.Command('rmg', 'make_god', command_type=sims4.commands.CommandType.Live)
 def cmd_rmg_base(*args, _connection=None):
     out = sims4.commands.CheatOutput(_connection)
+    
     try: sims4.commands.cheats_enabled = True
     except: pass
     
@@ -47,18 +48,26 @@ def cmd_rmg_base(*args, _connection=None):
     client = services.client_manager().get(_connection)
     if not client: return
     
+    # --- BEFEHLSREFERENZ / HILFEMENÜ ---
     if not args_list:
         out("=== Relnans Make God (RMG) - Befehlsreferenz ===")
         out("Nutzung: rmg [Modus] [Set_ID|auto|option_X] [debug]")
         out(" ")
         out("Verfuegbare Shortcuts:")
-        out("- rmg.all [Set_ID]    -> Auf den ganzen Haushalt.")
-        out("- rmg.active [Set_ID] -> Nur auf den aktiven Sim.")
+        out("- rmg.all [Set_ID|auto|option_X]    -> Auf den ganzen Haushalt.")
+        out("- rmg.active [Set_ID|auto|option_X] -> Nur auf den aktiven Sim.")
         out("- rmg.add id <ID>     -> Verbindet Sim via ID mit aktivem Sim.")
         out("- rmg.add name <Name> -> Verbindet Sim via Name mit aktivem Sim.")
-        out("- rmg.id <ID> [Set_ID]-> Wendet Profil auf ID an.")
-        out("- rmg.name \"Name\"     -> Wendet Profil auf gefundenen Sim an.")
-        out("- rmg.dump            -> Erstellt einen Textdatei-Dump.")
+        out("- rmg.id <ID> [Set_ID|auto|option_X]-> Auf Sim mit der ID.")
+        out("- rmg.name \"Name\" [Set|auto|option_X]-> Auf gefundenen Sim.")
+        out("- rmg.dump            -> Erstellt einen Textdatei-Dump (aktiver Sim).")
+        out("- rmg.dump all        -> Erstellt einen Dump fuer den ganzen Haushalt.")
+        out(" ")
+        out("Beispiele:")
+        out("rmg.all auto       -> Smarte Zuweisung (Kinder kriegen Kinder-Set etc.)")
+        out("rmg.all 1          -> Erzwingt Set 1 fuer ALLE im Haushalt.")
+        out("rmg.active 0 debug -> Set 0 auf aktiven Sim mit genauen Logs.")
+        out("rmg auto           -> Kurzbefehl fuer 'rmg all auto'.")
         out("==================================================")
         return
         
@@ -77,7 +86,7 @@ def cmd_rmg_base(*args, _connection=None):
         except:
             active_household.append(sim)
             
-    targets = []
+    targets_with_reason = []
     set_id = 'auto'
     mode = 'all'
 
@@ -85,41 +94,58 @@ def cmd_rmg_base(*args, _connection=None):
         mode = args_list[0]
         
     if mode == 'all':
-        targets = list(active_household)
+        for sim in active_household:
+            targets_with_reason.append((sim, "Household"))
+        
         inc_roommates = mg_config.get("include_roommates_in_all", False)
         inc_keyholders = mg_config.get("include_keyholders_in_all", False)
         
         if (inc_roommates or inc_keyholders) and active_sim_info:
             tracker = getattr(active_sim_info, 'relationship_tracker', None)
             if tracker:
-                target_ids_in_household = [t.sim_id for t in targets]
+                target_ids_in_household = [t[0].sim_id for t in targets_with_reason]
                 for target_id in tuple(tracker.target_sim_gen()):
                     if target_id not in target_ids_in_household:
+                        has_roommate = False
+                        has_key = False
+                        # Alle Bits scannen
                         for bit in tuple(tracker.get_all_bits(target_id)):
                             b_name = getattr(bit, '__name__', '').lower()
-                            if (inc_roommates and 'roommate' in b_name) or (inc_keyholders and 'key' in b_name):
-                                target_sim = mg_utils.get_sim_by_id(target_id)
-                                if target_sim:
-                                    targets.append(target_sim)
-                                break
+                            if 'roommate' in b_name: has_roommate = True
+                            if 'key' in b_name: has_key = True
+                        
+                        # Priorisierung anwenden
+                        reason = None
+                        if inc_roommates and has_roommate:
+                            reason = "Roommate"
+                        elif inc_keyholders and has_key:
+                            reason = "Keyholder"
+                            
+                        if reason:
+                            target_sim = mg_utils.get_sim_by_id(target_id)
+                            if target_sim:
+                                targets_with_reason.append((target_sim, reason))
                                 
         if len(args_list) > 1: set_id = _normalize_selector(args_list[1])
+        
     elif mode == 'active':
-        if active_sim_info: targets = [active_sim_info]
+        if active_sim_info: targets_with_reason.append((active_sim_info, "Aktiver Sim"))
         if len(args_list) > 1: set_id = _normalize_selector(args_list[1])
+        
     elif mode == 'id':
         if len(args_list) > 1:
             try:
                 found_sim = mg_utils.get_sim_by_id(int(args_list[1]))
-                if found_sim: targets = [found_sim]
+                if found_sim: targets_with_reason.append((found_sim, "Manuelle ID"))
             except: pass
         if len(args_list) > 2: set_id = _normalize_selector(args_list[2])
+        
     elif mode == 'name':
         if len(args_list) > 1:
             search_str = " ".join(args_list[1:])
             matches = mg_utils.get_sims_by_fuzzy_name(search_str, active_household)
             if len(matches) == 1:
-                targets = matches
+                targets_with_reason.append((matches[0], "Namens-Suche"))
             elif len(matches) > 1:
                 out(f"[FEHLER] Mehrdeutiger Name: {len(matches)} Sims gefunden fuer '{search_str}'.")
                 max_lines = 20
@@ -135,9 +161,22 @@ def cmd_rmg_base(*args, _connection=None):
                 out("Bitte nutze rmg.id <SimID> oder gib einen genaueren Namen an.")
                 return
         if len(args_list) > 2: set_id = _normalize_selector(args_list[2])
+        
     else:
-        targets = list(active_household)
+        for sim in active_household:
+            targets_with_reason.append((sim, "Household"))
         set_id = _normalize_selector(args_list[0])
+
+    # --- ZUSAMMENFASSEN UND AUSGEBEN ---
+    targets = []
+    if targets_with_reason:
+        if force_debug: out("--- Liste der erfassten Sims ---")
+        for sim, reason in targets_with_reason:
+            targets.append(sim)
+            if force_debug:
+                first = getattr(sim, 'first_name', '')
+                last = getattr(sim, 'last_name', '')
+                out(f" -> [{first} {last}, {reason}] wird verarbeitet.")
 
     if not targets:
         out("[FEHLER] Keine passenden Sims gefunden.")
@@ -223,7 +262,7 @@ def cmd_rmg_add(*args, _connection=None):
         out(f"[FEHLER] apply_manual_relation: {e}")
 
 
-# --- DIREKTE SHORTCUTS ---
+# --- DIREKTE SHORTCUTS (rmg.all, rmg.active etc.) ---
 @sims4.commands.Command('rmg.all', command_type=sims4.commands.CommandType.Live)
 def cmd_rmg_all(*args, _connection=None):
     cmd_rmg_base('all', *args, _connection=_connection)
@@ -240,36 +279,69 @@ def cmd_rmg_id(*args, _connection=None):
 def cmd_rmg_name(*args, _connection=None):
     cmd_rmg_base('name', *args, _connection=_connection)
 
+
 # --- DIE UI-BRIDGE (PICKER-MENU) ---
 @sims4.commands.Command('make_god_ui_trigger', 'rmg.ui_trigger', command_type=sims4.commands.CommandType.Live)
 def cmd_rmg_ui_trigger(sim_id=None, option_key='option_1', _connection=None):
     out = sims4.commands.CheatOutput(_connection)
     try: sims4.commands.cheats_enabled = True
     except: pass
+    
     mg_config.load_config()
-    try: parsed_id = int(str(sim_id), 0)
-    except Exception as e: return
+    
+    try:
+        parsed_id = int(str(sim_id), 0)
+    except Exception as e:
+        mg_logger.log(f"[FEHLER] UI-Trigger: Konnte Sim-ID ({sim_id}) nicht lesen. {e}", is_debug=False, out=out)
+        return
+        
     target_sim = mg_utils.get_sim_by_id(parsed_id)
-    if not target_sim: return
+    if not target_sim: 
+        mg_logger.log(f"[FEHLER] UI-Trigger: Sim mit ID {parsed_id} existiert nicht.", is_debug=False, out=out)
+        return
+        
     client = services.client_manager().get(_connection)
     active_household = client.active_sim.sim_info.household if (client and client.active_sim) else None
     
+    mg_logger.log(f"[UI] Menue-Button geklickt fuer Sim: '{target_sim.first_name}' (Befehl: {option_key})", is_debug=False, out=out, force_debug=True)
+    
     if option_key == 'household':
-        targets = list(target_sim.household) if target_sim.household else [target_sim]
+        targets_with_reason = []
+        hh_sims = list(target_sim.household) if target_sim.household else [target_sim]
+        for s in hh_sims:
+            targets_with_reason.append((s, "Household"))
+        
         inc_roommates = mg_config.get("include_roommates_in_all", False)
         inc_keyholders = mg_config.get("include_keyholders_in_all", False)
+        
         if inc_roommates or inc_keyholders:
             tracker = getattr(target_sim, 'relationship_tracker', None)
             if tracker:
-                t_ids = [t.sim_id for t in targets]
+                t_ids = [t[0].sim_id for t in targets_with_reason]
                 for tid in tuple(tracker.target_sim_gen()):
                     if tid not in t_ids:
+                        has_roommate = False
+                        has_key = False
                         for bit in tuple(tracker.get_all_bits(tid)):
                             b_name = getattr(bit, '__name__', '').lower()
-                            if (inc_roommates and 'roommate' in b_name) or (inc_keyholders and 'key' in b_name):
-                                r_sim = mg_utils.get_sim_by_id(tid)
-                                if r_sim: targets.append(r_sim)
-                                break
+                            if 'roommate' in b_name: has_roommate = True
+                            if 'key' in b_name: has_key = True
+                        
+                        reason = None
+                        if inc_roommates and has_roommate: reason = "Roommate"
+                        elif inc_keyholders and has_key: reason = "Keyholder"
+                        
+                        if reason:
+                            r_sim = mg_utils.get_sim_by_id(tid)
+                            if r_sim: targets_with_reason.append((r_sim, reason))
+
+        # UI-Logik für Debug Logs in Textdatei
+        targets = [t[0] for t in targets_with_reason]
+        if mg_config.get("debug_log", False):
+            mg_logger.log("--- UI Queue erfasst ---", is_debug=True, out=None, force_debug=True)
+            for s, r in targets_with_reason:
+                mg_logger.log(f" -> [{s.first_name} {s.last_name}, {r}]", is_debug=True, out=None, force_debug=True)
+
         mg_queue.start_queue(targets, 'auto', active_household, out, False, _connection)
     else:
         mg_queue.start_queue([target_sim], option_key, active_household, out, False, _connection)

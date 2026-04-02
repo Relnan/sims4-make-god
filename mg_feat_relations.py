@@ -5,7 +5,6 @@ import mg_utils
 import services
 import sims4.resources
 
-# --- URSPRÜNGLICHE LOGIK FÜR KOMPLETTE SETS ---
 def apply_relations(sim_info, set_id, out, force_debug, group_targets=None):
     try:
         first_name = getattr(sim_info, 'first_name', 'Sim')
@@ -17,12 +16,14 @@ def apply_relations(sim_info, set_id, out, force_debug, group_targets=None):
         tracker = getattr(sim_info, 'relationship_tracker', None)
         if not tracker: return
 
+        # Nutze den injizierten Pool (Haushalt + Mitbewohner + Schlüssel) falls vorhanden
         targets = group_targets if group_targets else (list(sim_info.household) if getattr(sim_info, 'household', None) else [sim_info])
         
         skill_manager = services.get_instance_manager(sims4.resources.Types.STATISTIC)
         f_track = skill_manager.get(16650) if skill_manager else None
         r_track = skill_manager.get(16651) if skill_manager else None
 
+        # --- CONFIGS LADEN ---
         remove_negatives_scope = active_set.get("remove_negative_relations", False)
         remove_negatives_household = active_set.get("remove_negative_relations_household", False)
         raw_scope = active_set.get("remove_negative_relations_scope", [])
@@ -41,9 +42,11 @@ def apply_relations(sim_info, set_id, out, force_debug, group_targets=None):
         source_key = "source_female" if is_source_female else "source_male"
         source_config = ext_network.get(source_key, {})
 
+        # --- ZÄHLER INITIALISIEREN ---
         checked_count = 0
         modified_count = 0
 
+        # --- 1. & 2. SINGLE-PASS SCHLEIFE FÜR ALLE EXTERNEN BEZIEHUNGEN ---
         for target_id in tuple(tracker.target_sim_gen()):
             if target_id == sim_info.sim_id: continue
             
@@ -52,22 +55,28 @@ def apply_relations(sim_info, set_id, out, force_debug, group_targets=None):
             target_sim_info = None  
             current_bits = tuple(tracker.get_all_bits(target_id))
             
+            # --- TEIL A: NEGATIVE BEREINIGUNG ---
             if remove_negatives_scope or remove_negatives_household:
                 is_in_neg_scope = False
+                
                 if remove_negatives_household:
                     if not target_sim_info: target_sim_info = mg_utils.get_sim_by_id(target_id)
                     if target_sim_info and getattr(target_sim_info, 'household_id', None) == getattr(sim_info, 'household_id', None):
                         is_in_neg_scope = True
+                
                 if not is_in_neg_scope and remove_negatives_scope:
                     for bit in current_bits:
                         b_name = getattr(bit, '__name__', '').lower()
                         if any(kw in b_name for kw in scope_keywords) or 'fear' in b_name or 'jealous' in b_name:
                             is_in_neg_scope = True; break
+                
                 if is_in_neg_scope:
                     for bit in current_bits:
                         raw_b_name = getattr(bit, '__name__', '')
                         b_name = raw_b_name.lower()
+                        
                         if 'compatibility' in b_name: continue
+
                         if any(kw in b_name for kw in negative_keywords):
                             api_success = False
                             try: 
@@ -75,12 +84,14 @@ def apply_relations(sim_info, set_id, out, force_debug, group_targets=None):
                                 api_success = True
                                 target_modified = True
                             except: pass
+                            
                             if not target_sim_info: target_sim_info = mg_utils.get_sim_by_id(target_id)
                             if target_sim_info:
                                 target_tracker = getattr(target_sim_info, 'relationship_tracker', None)
                                 if target_tracker:
                                     try: target_tracker.remove_bit(sim_info.sim_id, bit)
                                     except: pass
+                            
                             if not api_success:
                                 try:
                                     sims4.commands.execute(f"relationship.remove_bit {sim_info.sim_id} {target_id} {raw_b_name}", None)
@@ -88,6 +99,7 @@ def apply_relations(sim_info, set_id, out, force_debug, group_targets=None):
                                     target_modified = True
                                 except: pass
 
+            # --- TEIL B: ERWEITERTES SOZIALES NETZWERK (MATRIX) ---
             if ext_enabled:
                 in_ext_scope = False
                 for bit in current_bits:
@@ -97,6 +109,7 @@ def apply_relations(sim_info, set_id, out, force_debug, group_targets=None):
                 
                 if in_ext_scope:
                     if not target_sim_info: target_sim_info = mg_utils.get_sim_by_id(target_id)
+                    
                     if target_sim_info:
                         is_target_female = getattr(target_sim_info, 'is_female', False)
                         target_key = "target_female" if is_target_female else "target_male"
@@ -137,6 +150,7 @@ def apply_relations(sim_info, set_id, out, force_debug, group_targets=None):
             
             if target_modified: modified_count += 1
 
+        # --- 3. POSITIVE HAUSHALTSBEZIEHUNGEN FORCIEREN ---
         target_f = active_set.get("harmony_friendship", -999)
         target_r = active_set.get("harmony_romance", -999)
         target_status = active_set.get("target_relationship_status", "")
@@ -170,7 +184,8 @@ def apply_relations(sim_info, set_id, out, force_debug, group_targets=None):
             if target_modified: modified_count += 1
 
         ext_status = "Aktiv" if ext_enabled else "Inaktiv"
-        mg_logger.log(f"   [Relations] {checked_count} geprüft, {modified_count} bearbeitet", is_debug=True, out=None, force_debug=force_debug)
+        mg_logger.log(f"   [Relations] {checked_count} geprüft, {modified_count} bearbeitet (HH-Basis: {target_f}/{target_r} | Ext-Matrix: {ext_status})", is_debug=True, out=None, force_debug=force_debug)
+        mg_logger.log(f"   [Relations] Abgeschlossen für {first_name}.", is_debug=True, out=None, force_debug=force_debug)
 
     except Exception as e:
         mg_logger.log(f"[FEHLER Relations] {e}", is_debug=False, out=out, force_debug=force_debug)
@@ -192,10 +207,10 @@ def _apply_status_bit_via_command(sim_id, target_id, status):
         except: pass
     return False
 
-# --- NEU: MANUELLE LOGIK FÜR RMG.ADD ---
+# --- MANUELLE LOGIK FÜR RMG.ADD ---
 def apply_manual_relation(sim_info, target_sim, settings, out, force_debug=False):
     """
-    Wendet Friendship, Romance und Keyholder basierend auf der Config direkt an.
+    Wendet Friendship und Romance basierend auf der Config direkt an.
     """
     try:
         tracker = getattr(sim_info, 'relationship_tracker', None)
@@ -218,43 +233,16 @@ def apply_manual_relation(sim_info, target_sim, settings, out, force_debug=False
         if t_friendship != -999 and f_track:
             tracker.set_relationship_score(target_id, t_friendship, f_track)
             out(f" -> Friendship gesetzt auf: {t_friendship}")
+            mg_logger.log(f"   [rmg.add] Friendship zu {target_sim.first_name} auf {t_friendship} gesetzt.", is_debug=True, out=None, force_debug=force_debug)
             
         if t_romance != -999 and r_track:
             if getattr(sim_info, 'age', 0) >= 8 and getattr(target_sim, 'age', 0) >= 8:
                 tracker.set_relationship_score(target_id, t_romance, r_track)
                 out(f" -> Romance gesetzt auf: {t_romance}")
+                mg_logger.log(f"   [rmg.add] Romance zu {target_sim.first_name} auf {t_romance} gesetzt.", is_debug=True, out=None, force_debug=force_debug)
             else:
                 out(" -> [INFO] Romance ignoriert (Mindestalter nicht erreicht).")
 
-        # 3. Keyholder Zuweisung
-        add_key = settings.get("add_keyholder", False)
-        if add_key:
-            if mg_utils.is_apartment_or_penthouse():
-                out(" -> [INFO] Keyholder-Status uebersprungen (Lot ist Apartment/Penthouse).")
-            else:
-                _apply_keyholder(sim_info, target_sim, out)
-                
     except Exception as e:
         out(f"[FEHLER] apply_manual_relation: {e}")
-
-def _apply_keyholder(sim_info, target_sim, out):
-    """
-    Zuweisung des Hauschluessels (Keyholder) ueber den offiziellen EA Konsolenbefehl.
-    Dies umgeht API-Abstuerze bei nicht-geladenen (hidden) Sims.
-    """
-    try:
-        sim_id = sim_info.sim_id
-        target_id = target_sim.sim_id
-        
-        # Das offizielle EA Beziehungs-Bit fuer Schluesselhalter
-        key_bit = "relbit_HasKey"
-        
-        # Zuweisung per Konsole erzwingen
-        try:
-            sims4.commands.execute(f"relationship.add_bit {sim_id} {target_id} {key_bit}", None)
-            out(" -> [OK] Keyholder-Status erfolgreich zugewiesen.")
-        except Exception as e:
-            out(f" -> [FEHLER] Konsolenbefehl blockiert: {e}")
-            
-    except Exception as e:
-        out(f" -> [FEHLER] Keyholder-Zuweisung komplett fehlgeschlagen: {e}")
+        mg_logger.log(f"[FEHLER rmg.add] {e}", is_debug=False, out=None, force_debug=force_debug)
