@@ -16,6 +16,8 @@ DEFAULT_CONFIG_STR = """{
     "language": "de",
     "debug_log": false,
     "log_mode": "overwrite",
+    "include_roommates_in_all": true,
+    "include_keyholders_in_all": true,
     
     "_comment_dump": "Filtert technische Statistiken heraus, um den Dump sauber zu halten.",
     "dump_blacklist_keywords": ["_error", "_high", "_low", "caspartid", "index_0", "index_1", "index_2", "index_3"],

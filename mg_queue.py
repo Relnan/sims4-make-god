@@ -24,8 +24,11 @@ def start_queue(targets, set_id_or_auto, active_household, out, force_debug, _co
             # Worker Module aufrufen
             mg_feat_traits.apply_traits(sim_info, actual_set_id, out, force_debug)
             mg_feat_stats.apply_stats(sim_info, actual_set_id, out, force_debug)
-            mg_feat_relations.apply_relations(sim_info, actual_set_id, out, force_debug)
             
+            # NEU: Das gesammelte Array 'targets' wird hier als Target-Pool injiziert!
+            mg_feat_relations.apply_relations(sim_info, actual_set_id, out, force_debug, group_targets=targets)
+            
+            # Finanzen nur einmal pro Haushalt ausführen
             if sim_info.household and sim_info.household.id not in households_funded_this_run:
                 success = mg_feat_wealth.apply_wealth(sim_info.household, actual_set_id, out, force_debug)
                 if success:

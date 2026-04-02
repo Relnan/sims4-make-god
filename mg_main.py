@@ -84,6 +84,25 @@ def cmd_rmg_base(*args, _connection=None):
         
     if mode == 'all':
         targets = list(active_household)
+        
+        # --- NEU: Roommates & Keyholders erfassen ---
+        inc_roommates = mg_config.get("include_roommates_in_all", False)
+        inc_keyholders = mg_config.get("include_keyholders_in_all", False)
+        
+        if (inc_roommates or inc_keyholders) and active_sim_info:
+            tracker = getattr(active_sim_info, 'relationship_tracker', None)
+            if tracker:
+                target_ids_in_household = [t.sim_id for t in targets]
+                for target_id in tuple(tracker.target_sim_gen()):
+                    if target_id not in target_ids_in_household:
+                        for bit in tuple(tracker.get_all_bits(target_id)):
+                            b_name = getattr(bit, '__name__', '').lower()
+                            if (inc_roommates and 'roommate' in b_name) or (inc_keyholders and 'key' in b_name):
+                                target_sim = mg_utils.get_sim_by_id(target_id)
+                                if target_sim:
+                                    targets.append(target_sim)
+                                break
+                                
         if len(args_list) > 1: set_id = _normalize_selector(args_list[1])
     elif mode == 'active':
         if active_sim_info: targets = [active_sim_info]
@@ -177,7 +196,25 @@ def cmd_rmg_ui_trigger(sim_id=None, option_key='option_1', _connection=None):
     mg_logger.log(f"[UI] Menue-Button geklickt fuer Sim: '{target_sim.first_name}' (Befehl: {option_key})", is_debug=False, out=out, force_debug=True)
     
     if option_key == 'household':
+        # Erweitert auch den UI-Trigger um Roommates und Keyholders, falls gewünscht
         targets = list(target_sim.household) if target_sim.household else [target_sim]
+        
+        inc_roommates = mg_config.get("include_roommates_in_all", False)
+        inc_keyholders = mg_config.get("include_keyholders_in_all", False)
+        
+        if inc_roommates or inc_keyholders:
+            tracker = getattr(target_sim, 'relationship_tracker', None)
+            if tracker:
+                t_ids = [t.sim_id for t in targets]
+                for tid in tuple(tracker.target_sim_gen()):
+                    if tid not in t_ids:
+                        for bit in tuple(tracker.get_all_bits(tid)):
+                            b_name = getattr(bit, '__name__', '').lower()
+                            if (inc_roommates and 'roommate' in b_name) or (inc_keyholders and 'key' in b_name):
+                                r_sim = mg_utils.get_sim_by_id(tid)
+                                if r_sim: targets.append(r_sim)
+                                break
+
         mg_queue.start_queue(targets, 'auto', active_household, out, False, _connection)
     else:
         mg_queue.start_queue([target_sim], option_key, active_household, out, False, _connection)

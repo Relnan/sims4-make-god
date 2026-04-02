@@ -5,7 +5,7 @@ import mg_utils
 import services
 import sims4.resources
 
-def apply_relations(sim_info, set_id, out, force_debug):
+def apply_relations(sim_info, set_id, out, force_debug, group_targets=None):
     try:
         first_name = getattr(sim_info, 'first_name', 'Sim')
         out(f"   -> [{first_name}] Berechne Beziehungen & Netzwerk...")
@@ -16,7 +16,8 @@ def apply_relations(sim_info, set_id, out, force_debug):
         tracker = getattr(sim_info, 'relationship_tracker', None)
         if not tracker: return
 
-        targets = list(sim_info.household) if getattr(sim_info, 'household', None) else [sim_info]
+        # Nutze den injizierten Pool (Haushalt + Mitbewohner + Schlüssel) falls vorhanden
+        targets = group_targets if group_targets else (list(sim_info.household) if getattr(sim_info, 'household', None) else [sim_info])
         
         skill_manager = services.get_instance_manager(sims4.resources.Types.STATISTIC)
         f_track = skill_manager.get(16650) if skill_manager else None
@@ -51,7 +52,6 @@ def apply_relations(sim_info, set_id, out, force_debug):
             
             checked_count += 1
             target_modified = False
-            
             target_sim_info = None  
             current_bits = tuple(tracker.get_all_bits(target_id))
             
@@ -68,8 +68,7 @@ def apply_relations(sim_info, set_id, out, force_debug):
                     for bit in current_bits:
                         b_name = getattr(bit, '__name__', '').lower()
                         if any(kw in b_name for kw in scope_keywords) or 'fear' in b_name or 'jealous' in b_name:
-                            is_in_neg_scope = True
-                            break
+                            is_in_neg_scope = True; break
                 
                 if is_in_neg_scope:
                     for bit in current_bits:
@@ -106,8 +105,7 @@ def apply_relations(sim_info, set_id, out, force_debug):
                 for bit in current_bits:
                     b_name = getattr(bit, '__name__', '').lower()
                     if any(kw in b_name for kw in ext_scope_keywords):
-                        in_ext_scope = True
-                        break
+                        in_ext_scope = True; break
                 
                 if in_ext_scope:
                     if not target_sim_info: target_sim_info = mg_utils.get_sim_by_id(target_id)
@@ -118,7 +116,6 @@ def apply_relations(sim_info, set_id, out, force_debug):
                         matrix_values = source_config.get(target_key, {})
                         
                         target_age_norm = str(getattr(target_sim_info, 'age', '')).split('.')[-1].lower().replace('_', '')
-                        
                         t_friendship = None
                         t_romance = None
                         
@@ -187,7 +184,7 @@ def apply_relations(sim_info, set_id, out, force_debug):
             if target_modified: modified_count += 1
 
         ext_status = "Aktiv" if ext_enabled else "Inaktiv"
-        mg_logger.log(f"   [Relations] {checked_count} geprüft, {modified_count} bearbeitet (HH-Basis: {target_f}/{target_r} | Ext-Matrix: {ext_status})", is_debug=True, out=out, force_debug=force_debug)
+        mg_logger.log(f"   [Relations] {checked_count} geprüft, {modified_count} bearbeitet (HH-Basis: {target_f}/{target_r} | Ext-Matrix: {ext_status})", is_debug=True, out=None, force_debug=force_debug)
         mg_logger.log(f"   [Relations] Abgeschlossen für {first_name}.", is_debug=True, out=None, force_debug=force_debug)
 
     except Exception as e:

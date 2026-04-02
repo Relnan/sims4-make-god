@@ -157,4 +157,4 @@ def apply_traits(sim_info, set_id, out, force_debug):
                     except: pass
                     if added: break
 
-    mg_logger.log(f"   [Traits/Perks] Abgeschlossen für {first_name}.", is_debug=True, out=None, force_debug=force_debug)
+    mg_logger.log(f"   [Traits/Perks] Abgeschlossen für {first_name} ({len(traits_to_add)} Traits, {added_perks_count} Perks, {removed_perks_count} entfernt).", is_debug=True, out=None, force_debug=force_debug)
