@@ -424,65 +424,68 @@ def cmd_rmg_name(*args, _connection=None):
     cmd_rmg_base('name', *args, _connection=_connection)
 
 
+# mg_main.py
+
+# --- DIE UI-BRIDGE (MACRO RUNNER / PIE MENU) ---
 @sims4.commands.Command('make_god_ui_trigger', 'rmg.ui_trigger', command_type=sims4.commands.CommandType.Live)
-def cmd_rmg_ui_trigger(sim_id=None, option_key='option_1', _connection=None):
+def cmd_rmg_ui_trigger(sim_id=None, action_id="01", _connection=None):
+    # SICHERHEITS-FALLBACK: Wenn EA die Connection verliert, holen wir sie uns selbst.
+    if _connection is None:
+        client = services.client_manager().get_first_client()
+        if client: _connection = client.id
+
     out = sims4.commands.CheatOutput(_connection)
     try: sims4.commands.cheats_enabled = True
     except: pass
     
     mg_config.load_config()
     
+    if not sim_id: return
+
+    # 1. Sicherer Cast der ID (EA uebergibt oft Hex-Strings statt int)
     try: parsed_id = int(str(sim_id), 0)
-    except Exception as e: return
+    except Exception as e:
+        mg_logger.log(f"[FEHLER] UI-Trigger: Konnte Sim-ID ({sim_id}) nicht lesen. {e}", is_debug=False, out=out)
+        return
         
     target_sim = mg_utils.get_sim_by_id(parsed_id)
-    if not target_sim: return
+    if not target_sim: 
+        mg_logger.log(f"[FEHLER] UI-Trigger: Sim mit ID {parsed_id} existiert nicht.", is_debug=False, out=out)
+        return
         
     client = services.client_manager().get(_connection)
     active_household = client.active_sim.sim_info.household if (client and client.active_sim) else None
     
-    if option_key == 'household':
-        targets_with_reason = []
-        hh_sims = list(target_sim.household) if target_sim.household else [target_sim]
-        for s in hh_sims:
-            targets_with_reason.append((s, "Household"))
-        
-        inc_roommates = mg_config.get("include_roommates_in_all", False)
-        inc_keyholders = mg_config.get("include_keyholders_in_all", False)
-        
-        if inc_roommates or inc_keyholders:
-            tracker = getattr(target_sim, 'relationship_tracker', None)
-            if tracker:
-                t_ids = [t[0].sim_id for t in targets_with_reason]
-                for tid in tuple(tracker.target_sim_gen()):
-                    if tid not in t_ids:
-                        has_roommate = False
-                        has_key = False
-                        for bit in tuple(tracker.get_all_bits(tid)):
-                            b_name = getattr(bit, '__name__', '').lower()
-                            if 'roommate' in b_name: has_roommate = True
-                            if 'key' in b_name: has_key = True
-                        
-                        reason = None
-                        if inc_roommates and has_roommate: reason = "Roommate"
-                        elif inc_keyholders and has_key: reason = "Keyholder"
-                        
-                        if reason:
-                            r_sim = mg_utils.get_sim_by_id(tid)
-                            if r_sim: targets_with_reason.append((r_sim, reason))
+    # 2. Pruefen: Ist der Ziel-Sim spielbar (im aktiven Haushalt) oder NPC?
+    is_playable = False
+    if active_household and getattr(target_sim, 'household_id', None) == active_household.id:
+        is_playable = True
 
-        targets = [t[0] for t in targets_with_reason]
+    # 3. Config-Schluessel zusammenbauen (z.B. "ui_playable_01" oder "ui_npc_01")
+    raw_action = str(action_id).replace('"', '').strip()
+    action_suffix = raw_action.zfill(2) # Macht aus "1" automatisch "01"
+    
+    config_key = f"ui_playable_{action_suffix}" if is_playable else f"ui_npc_{action_suffix}"
+    
+    # 4. Macros aus der JSON laden
+    macros = mg_config.get("macros", {})
+    macro_commands = macros.get(config_key, [])
+    
+    if not macro_commands:
+        mg_logger.log(f"[UI] Keine Macro-Befehle fuer '{config_key}' in der Config gefunden. Abbruch.", is_debug=True, out=out)
+        return
         
-        active_sim_info_ui = client.active_sim.sim_info if client and client.active_sim else None
-        if active_sim_info_ui:
-            for t_sim in targets:
-                if t_sim.sim_id != active_sim_info_ui.sim_id:
-                    sims4.commands.execute(f"relationship.add_bit {active_sim_info_ui.sim_id} {t_sim.sim_id} 15803", None)
-
-        mg_queue.start_queue(targets, 'auto', active_household, out, False, None, _connection)
-    else:
-        active_sim_info_ui = client.active_sim.sim_info if client and client.active_sim else None
-        if active_sim_info_ui and target_sim.sim_id != active_sim_info_ui.sim_id:
-             sims4.commands.execute(f"relationship.add_bit {active_sim_info_ui.sim_id} {target_sim.sim_id} 15803", None)
-             
-        mg_queue.start_queue([target_sim], option_key, active_household, out, False, None, _connection)
+    log_label = "PLAYABLE" if is_playable else "NPC"
+    mg_logger.log(f"[UI] Macro '{config_key}' gestartet fuer {log_label} Sim: '{target_sim.first_name}'.", is_debug=False, out=out, force_debug=True)
+    
+    # 5. Befehle sequenziell ausfuehren
+    for raw_cmd in macro_commands:
+        # Platzhalter mit echter Sim-ID ersetzen
+        cmd_to_run = str(raw_cmd).replace("[sim_id]", str(parsed_id))
+        
+        mg_logger.log(f"   -> Execute: {cmd_to_run}", is_debug=True, out=out, force_debug=True)
+        try:
+            # Die _connection wird nun zwingend an jeden EA-Cheat durchgereicht
+            sims4.commands.execute(cmd_to_run, _connection)
+        except Exception as e:
+            mg_logger.log(f"      [FEHLER] bei Befehl '{cmd_to_run}': {e}", is_debug=False, out=out)

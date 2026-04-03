@@ -1,3 +1,4 @@
+# mg_config.py
 import os
 import json
 import sims4.commands
@@ -14,16 +15,16 @@ _config_data = None
 DEFAULT_CONFIG_STR = """{
     "_comment_global": "MakeGod Mod Konfiguration. Alle Schluessel, die mit '_' beginnen, werden ignoriert.",
     "language": "de",
-    "debug_log": false,
+    "debug_log": true,
     "log_mode": "overwrite",
     "include_roommates_in_all": true,
     "include_keyholders_in_all": true,
-    
+
     "manual_add_settings": {
-        "_comment": "Einstellungen fuer rmg.add. Werte -999 ignorieren die Zuweisung. spawn_sim teleportiert den Sim zu dir.",
+        "_comment": "Einstellungen fuer den Befehl rmg.add. Werte -999 ignorieren die Zuweisung.",
         "friendship": 100,
         "romance": -999,
-        "spawn_sim": false
+        "spawn_sim": true
     },
 
     "batches": {
@@ -32,6 +33,13 @@ DEFAULT_CONFIG_STR = """{
             "rmg.dump all",
             "rmg.all",
             "rmg.dump all"
+        ],
+        "deb": [
+            "rmg.dump",
+            "rmg.active debug",
+            "rmg.dump",
+            "rmg.active debug",
+            "rmg.dump"
         ],
         "setup_npc": [
             "rmg.add name {0}",
@@ -42,11 +50,46 @@ DEFAULT_CONFIG_STR = """{
             "rmg.name {0} 3",
             "rmg.add name {1}",
             "rmg.name {1} 1"
+        ],
+        "setup_custom_npc": [
+            "rmg.add id [sim_id]",
+            "sims.give_satisfaction_points {0} [sim_id]",
+            "rmg.id [sim_id] {1}"
         ]
     },
-
+    
+    "_comment_macros": "=== UI MACRO SYSTEM ===",
+    "_help_macros": "Hier definierst du, was die Buttons im Klick-Menue tun. Nutze [sim_id] als Platzhalter.",
+    "macros": {
+        "ui_playable_01": [
+            "rmg.id [sim_id] option_1"
+        ],
+        "ui_playable_02": [
+            "sims.give_satisfaction_points 10000 [sim_id]"
+        ],
+        "ui_playable_03": [
+            "rmg.dump id [sim_id]"
+        ],
+        "ui_playable_04": [],
+        "ui_playable_05": [],
+        
+        "ui_npc_01": [
+            "rmg.id [sim_id] 1"
+        ],
+        "ui_npc_02": [
+            "rmg.id [sim_id] 5"
+        ],
+        "ui_npc_03": [
+            "rmg.id [sim_id] 4"
+        ],
+        "ui_npc_04": [],
+        "ui_npc_05": [
+            "rmg.add id [sim_id]"
+        ]
+    },
+    
     "_comment_dump": "Filtert technische Statistiken heraus, um den Dump sauber zu halten.",
-    "dump_blacklist_keywords": ["_error", "_high", "_low", "caspartid", "index_0", "index_1", "index_2", "index_3", "ww_"],
+    "dump_blacklist_keywords": ["_error", "_high", "_low", "caspartid", "index_0", "index_1", "index_2", "index_3"],
     
     "_comment_sets": "=== DEINE SIMS-EINSTELLUNGEN (SETS) ===",
     "sets": {
@@ -83,10 +126,9 @@ DEFAULT_CONFIG_STR = """{
         },
         
         "0": {
-            "_comment_profile": "Ultimate God (Standard Profil)",
             "name": "Ultimate God (Standard Profil)",
             "luck": {"value": 100},
-            "allow_all_skills": false,
+            "allow_all_skills": true,
             "max_player_skills": true,
             "max_npc_skills": false,
             "allowed_skills": [],
@@ -176,7 +218,9 @@ DEFAULT_CONFIG_STR = """{
                 "trait_HolidayTradition_FatherWinterBaby", "trait_CreativelyGifted", "trait_MentallyGifted", 
                 "trait_PhysicallyGifted", "trait_SociallyGifted", "trait_ForeverFresh",
                 "trait_Quick_Learner", "trait_High_Metabolism", "trait_EssenceOfFlavor", "trait_Alluring", 
-                "trait_Gregarious", "trait_Muser", "trait_HomeTurf", "trait_Collector", "trait_FamilySim"
+                "trait_Gregarious", "trait_Muser", "trait_HomeTurf", "trait_Collector", "trait_FamilySim",
+                "TURBODRIVER:WickedWhims_Trait_Attractiveness_Reward_UniqueLooks",
+                "TURBODRIVER:WickedWhims_Trait_Exhibitionist"
             ],
             "traits_sex_male": [],
             "traits_sex_female": [],
@@ -193,68 +237,40 @@ DEFAULT_CONFIG_STR = """{
             "perks_all": [],
             "perks_occult": {
                 "spellcaster": [
-                    "witchPerks_Prowess_1_KnowledgeIsMagic", "witchPerks_Prowess_2_MoteHound", "witchPerks_Prowess_3_ChargeControl",
-                    "witchPerks_Prowess_4_Hexproof", "witchPerks_Prowess_5_MagicalResonance", "witchPerks_Alchemy_1_BlenderArm",
-                    "witchPerks_Alchemy_2_FrugalCombiner", "witchPerks_Alchemy_3_ExtraChemistry", "witchPerks_Alchemy_4_MixMaster",
-                    "witchPerks_Alchemy_5_PotentPotables", "witchPerks_Spellcasting_1_Discharge", "witchPerks_Spellcasting_2_PowerShunt",
-                    "witchPerks_Spellcasting_3_SpectralReach", "witchPerks_Spellcasting_4_MasterCaster", "witchPerks_Spellcasting_5_MasterDuelist"
+                    "witchPerks_Alchemy_1_BlenderArm", "witchPerks_Alchemy_2_FrugalCombinations", "witchPerks_Alchemy_3_ExtraChemistry", "witchPerks_Alchemy_4_MixMaster", "witchPerks_Alchemy_5_PotentPotables",
+                    "witchPerks_Prowess_1_KnowledgeIsMagic", "witchPerks_Prowess_2_MoteHound", "witchPerks_Prowess_3_ChargeControl", "witchPerks_Prowess_4_Hexproof", "witchPerks_Prowess_5_MagicalResonance",
+                    "witchPerks_Spellcasting_1_Discharge", "witchPerks_Spellcasting_2_PowerShunt", "witchPerks_Spellcasting_3_SpectralReach", "witchPerks_Spellcasting_4_MasterCaster", "witchPerks_Spellcasting_5_MasterDuelist",
+                    "witchPerks_Open_1A_IncredibleForager", "witchPerks_Open_1B_Experimenter", "witchPerks_Open_2A_InsightfulEye", "witchPerks_Open_2B_WitchSocialite", "witchPerks_Open_3A_MischiefMaster", 
+                    "witchPerks_Open_3B_TameTheUntameable", "witchPerks_Open_3C_PracticedPracticality", "witchPerks_Open_4A_NaturalMentor", "witchPerks_Open_4B_MagicalDiscounts"
                 ],
                 "vampire": [
-                    "vampirePerks_MindPowers_AlluringVisage_1", "vampirePerks_MindPowers_AlluringVisage_2", "vampirePerks_MindPowers_AlluringVisage_3",
-                    "vampirePerks_MindPowers_Command", "vampirePerks_MindPowers_DetectPersonality", "vampirePerks_MindPowers_EmotionalBurst_1",
-                    "vampirePerks_MindPowers_EmotionalBurst_2", "vampirePerks_MindPowers_EmotionalBurst_3", "vampirePerks_MindPowers_Hallucinate",
-                    "vampirePerks_MindPowers_IrresistibleSlumber", "vampirePerks_MindPowers_Mesmerize", "vampirePerks_PersonaPowers_GarlicImmunity",
-                    "vampirePerks_PersonaPowers_LoseHumanity_Hygiene", "vampirePerks_PersonaPowers_NocturnalAffinity_Level1", "vampirePerks_PersonaPowers_NocturnalAffinity_Level2",
-                    "vampirePerks_PersonaPowers_NocturnalAffinity_Level3", "vampirePerks_PersonaPowers_PotentPower_1", "vampirePerks_PersonaPowers_PotentPower_2",
-                    "vampirePerks_PersonaPowers_PotentPower_3", "vampirePerks_PersonaPowers_ResistanceSolis_Level1", "vampirePerks_PersonaPowers_ResistanceSolis_Level2",
-                    "vampirePerks_PersonaPowers_ResistanceSolis_Level3", "vampirePerks_PersonaPowers_TameTheThirst", "vampirePerks_PersonaPowers_VampiricSlumber_Level1",
-                    "vampirePerks_PersonaPowers_VampiricSlumber_Level2", "vampirePerks_PersonaPowers_VampiricSlumber_Level3", "vampirePerks_PersonaPowers_VampiricStrength_Level1",
-                    "vampirePerks_PersonaPowers_VampiricStrength_Level2", "vampirePerks_PersonaPowers_VampiricStrength_Level3", "vampirePerks_SpiritPowers_AlwaysWelcome",
-                    "vampirePerks_SpiritPowers_BatForm", "vampirePerks_SpiritPowers_ManipulateLifeSpirit", "vampirePerks_SpiritPowers_MistForm",
-                    "vampirePerks_SpiritPowers_VampireCreation", "vampirePerks_SpiritPowers_VampireRun"
+                    "vampirePerks_MindPowers_AlluringVisage_Level1", "vampirePerks_MindPowers_AlluringVisage_Level2", "vampirePerks_MindPowers_AlluringVisage_Level3",
+                    "vampirePerks_MindPowers_Command", "vampirePerks_MindPowers_DetectPersonality", "vampirePerks_MindPowers_Mesmerize",
+                    "vampirePerks_PersonaPowers_GarlicImmunity", "vampirePerks_PersonaPowers_LoseHumanity_Hygiene", 
+                    "vampirePerks_PersonaPowers_ResistanceSolis_Level1", "vampirePerks_PersonaPowers_ResistanceSolis_Level2", "vampirePerks_PersonaPowers_ResistanceSolis_Level3",
+                    "vampirePerks_PersonaPowers_TameTheThirst",
+                    "vampirePerks_PersonaPowers_VampiricSlumber_Level1", "vampirePerks_PersonaPowers_VampiricSlumber_Level2", "vampirePerks_PersonaPowers_VampiricSlumber_Level3",
+                    "vampirePerks_SpiritPowers_AlwaysWelcome", "vampirePerks_SpiritPowers_BatForm", "vampirePerks_SpiritPowers_MistForm", "vampirePerks_SpiritPowers_VampireRun"
                 ],
                 "werewolf": [
-                    "werewolfPerks_ApexPredator", "werewolfPerks_CurseBearer", "werewolfPerks_Dormant_LunarEpiphany",
-                    "werewolfPerks_Dormant_TransformationMastery", "werewolfPerks_Dormant_WerewolfDiplomacy", "werewolfPerks_Dormant_WerewolfEmpathy",
-                    "werewolfPerks_Dormant_WerewolfMentorship", "werewolfPerks_EnhancedSenses", "werewolfPerks_Hunter",
-                    "werewolfPerks_HuntingParty", "werewolfPerks_ImmortalWolf", "werewolfPerks_LegacyOfTheLycan",
-                    "werewolfPerks_LunarBlessing", "werewolfPerks_LunarResistance", "werewolfPerks_NaturalHealing",
-                    "werewolfPerks_Nightvision", "werewolfPerks_PackHowl", "werewolfPerks_PersonalGrooming",
-                    "werewolfPerks_Scavenger", "werewolfPerks_SomberHowl", "werewolfPerks_SuperSpeed",
-                    "werewolfPerks_TerritoryMarking", "werewolfPerks_TheWillToResist", "werewolfPerks_Tunneler", "werewolfPerks_WolfNap"
+                    "werewolfPerks_EnhancedSenses", "werewolfPerks_Hunter", "werewolfPerks_ImmortalWolf", "werewolfPerks_LunarResistance", 
+                    "werewolfPerks_NaturalHealing", "werewolfPerks_Nightvision", "werewolfPerks_PersonalGrooming", "werewolfPerks_TheWillToResist", "werewolfPerks_WolfNap"
                 ],
                 "fairy": [
-                    "fairyPerks_AgeThemUp", "fairyPerks_BloomPlant", "fairyPerks_BottleMood_1", "fairyPerks_BottleMood_2",
-                    "fairyPerks_BringGnomesToLife", "fairyPerks_CreateSeed", "fairyPerks_CureAilment", "fairyPerks_DetectHarvestables",
-                    "fairyPerks_EmbraceRelationshipChanges", "fairyPerks_EmotionalEnergyFromPositiveSocials", "fairyPerks_EmotionalEnergyFromSiphonNegativeMoods",
-                    "fairyPerks_EmotionalEnergyFromSleep", "fairyPerks_FairyInsight", "fairyPerks_ImprovedForagingAndDuplicateHarvestable",
-                    "fairyPerks_InfluenceRelationship_1", "fairyPerks_InfluenceRelationship_2", "fairyPerks_InfluenceSentiment_1",
-                    "fairyPerks_InfluenceSentiment_2", "fairyPerks_ManipulateObject", "fairyPerks_NurtureNature_1", "fairyPerks_NurtureNature_2",
-                    "fairyPerks_PlantGrowth", "fairyPerks_PlayWithLuck_1", "fairyPerks_PlayWithLuck_2", "fairyPerks_PlayWithTheirMood",
-                    "fairyPerks_ProjectMyMood", "fairyPerks_ResistSpilloverBuffs", "fairyPerks_TurnTargetSimToFairy"
+                    "fairyPerks_BloomPlant", "fairyPerks_CureAilment", "fairyPerks_DetectHarvestables", "fairyPerks_FairyInsight", "fairyPerks_PlantGrowth", "fairyPerks_ResistSpilloverBuffs"
                 ],
                 "ghost": [
-                    "ghostPowersPerks_FearTheNight", "ghostPowersPerks_GhostNap", "ghostPowersPerks_GhostlyMovement",
-                    "ghostPowersPerks_GiveGoodDream", "ghostPowersPerks_ImproveLife", "ghostPowersPerks_InstantMaintenance",
-                    "ghostPowersPerks_InstantMaintenance_2", "ghostPowersPerks_InstantMaintenance_3", "ghostPowersPerks_NurtureLife",
-                    "ghostPowersPerks_PositivePresence", "ghostPowersPerks_RemoveMaterial", "ghostPowersPerks_SaveALife",
-                    "ghostPowersPerks_SpookyWoohoo", "ghostPowersPerks_StrongerStamina", "ghostPowersPerks_SuppressLivingNeeds",
-                    "ghostPowersPerks_SuppressLivingNeeds_2", "ghostPowersPerks_WarmEmbrace"
+                    "ghostPowersPerks_GhostlyMovement", "ghostPowersPerks_ImproveLife", "ghostPowersPerks_InstantMaintenance", "ghostPowersPerks_InstantMaintenance_2", "ghostPowersPerks_InstantMaintenance_3", 
+                    "ghostPowersPerks_NurtureLife", "ghostPowersPerks_PositivePresence", "ghostPowersPerks_SaveALife", "ghostPowersPerks_StrongerStamina", "ghostPowersPerks_WarmEmbrace"
                 ]
             },
             "spells_all": [],
             "spells_occult": {
                 "spellcaster": [
-                    "spell_Practical_1_Clean", "spell_Practical_1_Repair", "spell_Practical_2_Food",
-                    "spell_Practical_2_Plant", "spell_Practical_3_Teleport", "spell_Practical_3_Duplicate",
-                    "spell_Practical_4_GrowPlant", "spell_Practical_4_RiteOfAscension", "spell_Untamed_1_Fire",
-                    "spell_Untamed_2_Lightning", "spell_Untamed_2_SummonGhost", "spell_Untamed_3_Freeze",
-                    "spell_Untamed_3_MindControl", "spell_Untamed_4_Resurrect", "spell_Untamed_4_Decurse",
-                    "spell_Untamed_5_CloneSelf", "spell_Mischief_1_Sadness", "spell_Mischief_1_Confuse",
-                    "spell_Mischief_2_Fight", "spell_Mischief_2_Love", "spell_Mischief_3_Steal",
-                    "spell_Mischief_4_Transform", "recipe_Potion_1_MakeHappy", "recipe_Potion_2_Friendship",
-                    "recipe_Potion_3_Needs", "recipe_Potion_3_Cure", "recipe_Potion_4_Immortality",
-                    "recipe_Potion_5_Clone"
+                    "spells_Practical_1_Clean", "spells_Practical_1_Repair", "spells_Practical_2_Food", "spells_Practical_2_Garden", "spells_Practical_3_Duplicate", "spells_Practical_3_Teleport", "spells_Practical_4_GrowPlant", "spells_Practical_4_Transport", "spells_Practical_5_ConvertToWitch",
+                    "spells_Mischief_1_Confuse", "spells_Mischief_1_Sadness", "spells_Mischief_2_Fight", "spells_Mischief_2_Love", "spells_Mischief_3_Steal", "spells_Mischief_4_Transform", "spells_Mischief_5_ChangeAppearance",
+                    "spells_Untamed_1_Fire", "spells_Untamed_2_Lightning", "spells_Untamed_2_SummonGhost", "spells_Untamed_3_Freeze", "spells_Untamed_3_MindControl", "spells_Untamed_4_RemoveCurse", "spells_Untamed_4_Resurrect", "spells_Untamed_5_CloneSelf",
+                    "recipe_Drink_Cauldron_Potion_BFF", "recipe_Drink_Cauldron_Potion_DeathProof", "recipe_Drink_Cauldron_Potion_FeelGood", "recipe_Drink_Cauldron_Potion_Hate", "recipe_Drink_Cauldron_Potion_Immortality", "recipe_Drink_Cauldron_Potion_LifeExtension", "recipe_Drink_Cauldron_Potion_Love", "recipe_Drink_Cauldron_Potion_Luck", "recipe_Drink_Cauldron_Potion_MakeGlowy", "recipe_Drink_Cauldron_Potion_Nullify", "recipe_Drink_Cauldron_Potion_Pheromone", "recipe_Drink_Cauldron_Potion_Poison", "recipe_Drink_Cauldron_Potion_RemoveCurses", "recipe_Drink_Cauldron_Potion_ResetWitchPerks", "recipe_Drink_Cauldron_Potion_SkillIncrease"
                 ]
             }
         },
@@ -337,62 +353,97 @@ DEFAULT_CONFIG_STR = """{
             "spells_occult": {}
         },
 
-        "3": {
-            "name": "Female Enhanced NPC/Roommate",
-            "luck": {"value": 100},
+        "4": {
+            "name": "Dark Occult (Boese)",
+            "luck": {"value": -50},
             "allow_all_skills": false,
             "max_player_skills": false,
-            "max_npc_skills": true,
+            "max_npc_skills": false,
             "allowed_skills": [],
             "master_player_careers": false,
             "master_npc_careers": false,
-            "harmony_friendship": 100,
-            "harmony_romance": 100,
-            "target_relationship_status": "woohoo_partner",
-            "remove_negative_relations": true,
+            "harmony_friendship": 0,
+            "harmony_romance": -999,
+            "target_relationship_status": "",
+            "remove_negative_relations": false,
             "remove_negative_relations_household": false,
-            "remove_negative_relations_scope": ["roommate", "key", "friend", "romantic", "woohoo", "significant"],
+            "remove_negative_relations_scope": [],
             "harmony_extended_network": {"enabled": false},
             "satisfaction_points": 0,
             "add_funds": 0,
             "max_funds": 50000,
-            "fill_motives_mode": "config",
-            "freeze_motives": true,
-            "motives_to_fill": {
-                "human": ["motive_hunger", "motive_energy", "motive_bladder", "motive_hygiene", "motive_social", "motive_fun"]
-            },
-            "remove_all_dislikes": true,
-            "exclude_all": [
-                "trait_Evil", "trait_Mean", "trait_HotHeaded", "trait_Jealous", "trait_Gloomy", 
-                "trait_Clumsy", "trait_Slob", "trait_Unflirty", "trait_Insane", "trait_Squeamish", "trait_Lazy"
-            ],
+            "fill_motives_mode": "none",
+            "freeze_motives": false,
+            "motives_to_fill": {},
+            "remove_all_dislikes": false,
+            "exclude_all": ["trait_Good", "trait_Friendly", "trait_Carefree", "trait_Cheerful"],
             "exclude_sex_male": [],
             "exclude_sex_female": [],
-            "traits_all": [],
+            "traits_all": ["trait_Evil", "trait_Mean"],
             "traits_sex_male": [],
-            "traits_sex_female": [
-                "trait_GenderOptions_AttractedTo_Female",
-                "trait_GenderOptions_AttractedTo_Male",
-                "trait_Doctor_SicknessResistant",
-                "trait_Cauldron_Potion_Immortality",
-                "trait_Antiseptic",
-                "trait_Shameless",
-                "trait_Beguiling",
-                "trait_GreatKisser",
-                "trait_Fertile",
-                "trait_Alluring",
-                "trait_AlwaysWelcome",
-                "trait_Carefree",
-                "trait_Observant"
-            ],
+            "traits_sex_female": [],
             "traits_occult": {},
             "remove_unlisted_perks": false,
             "perks_exclude_all": [],
             "perks_exclude_occult": {},
             "perks_all": [],
-            "perks_occult": {},
+            "perks_occult": {
+                "spellcaster": ["witchPerks_Prowess_5_MagicalResonance", "witchPerks_Spellcasting_5_MasterDuelist"],
+                "vampire": ["vampirePerks_MindPowers_EmotionalBurst_Level1", "vampirePerks_MindPowers_EmotionalBurst_Level2", "vampirePerks_MindPowers_EmotionalBurst_Level3", "vampirePerks_MindPowers_Hallucinate", "vampirePerks_MindPowers_IrresistibleSlumber", "vampirePerks_SpiritPowers_ManipulateLifeSpirit"],
+                "fairy": ["fairyPerks_PlayWithLuck_1", "fairyPerks_PlayWithLuck_2", "fairyPerks_PlayWithTheirMood", "fairyPerks_ProjectMyMood", "fairyPerks_InfluenceRelationship_1", "fairyPerks_InfluenceRelationship_2", "fairyPerks_InfluenceSentiment_1", "fairyPerks_InfluenceSentiment_2"],
+                "ghost": ["ghostPowersPerks_FearTheNight", "ghostPowersPerks_RemoveMaterial", "ghostPowersPerks_GhostlyMovement", "ghostPowersPerks_SpookyWoohoo"]
+            },
             "spells_all": [],
-            "spells_occult": {}
+            "spells_occult": {
+                "spellcaster": ["spells_Untamed_1_Fire", "spells_Untamed_2_Lightning", "spells_Untamed_3_Freeze", "spells_Untamed_3_MindControl", "spells_Mischief_3_Steal", "spells_Mischief_4_Transform", "spells_Mischief_5_ChangeAppearance", "recipe_Drink_Cauldron_Potion_Hate", "recipe_Drink_Cauldron_Potion_Poison"]
+            }
+        },
+
+        "5": {
+            "name": "Blessed Occult NPC (Gut)",
+            "luck": {"value": 50},
+            "allow_all_skills": false,
+            "max_player_skills": false,
+            "max_npc_skills": false,
+            "allowed_skills": [],
+            "master_player_careers": false,
+            "master_npc_careers": false,
+            "harmony_friendship": 50,
+            "harmony_romance": -999,
+            "target_relationship_status": "",
+            "remove_negative_relations": false,
+            "remove_negative_relations_household": false,
+            "remove_negative_relations_scope": [],
+            "harmony_extended_network": {"enabled": false},
+            "satisfaction_points": 0,
+            "add_funds": 0,
+            "max_funds": 50000,
+            "fill_motives_mode": "none",
+            "freeze_motives": false,
+            "motives_to_fill": {},
+            "remove_all_dislikes": false,
+            "exclude_all": ["trait_Evil", "trait_Mean"],
+            "exclude_sex_male": [],
+            "exclude_sex_female": [],
+            "traits_all": ["trait_Good", "trait_Friendly"],
+            "traits_sex_male": [],
+            "traits_sex_female": [],
+            "traits_occult": {},
+            "remove_unlisted_perks": false,
+            "perks_exclude_all": [],
+            "perks_exclude_occult": {},
+            "perks_all": [],
+            "perks_occult": {
+                "spellcaster": ["witchPerks_Prowess_1_KnowledgeIsMagic", "witchPerks_Spellcasting_1_Discharge"],
+                "vampire": ["vampirePerks_PersonaPowers_GarlicImmunity", "vampirePerks_PersonaPowers_ResistanceSolis_Level1", "vampirePerks_PersonaPowers_ResistanceSolis_Level2", "vampirePerks_PersonaPowers_ResistanceSolis_Level3", "vampirePerks_PersonaPowers_TameTheThirst", "vampirePerks_PersonaPowers_VampiricSlumber_Level1", "vampirePerks_PersonaPowers_VampiricSlumber_Level2", "vampirePerks_PersonaPowers_VampiricSlumber_Level3"],
+                "werewolf": ["werewolfPerks_ImmortalWolf", "werewolfPerks_LunarResistance", "werewolfPerks_NaturalHealing", "werewolfPerks_WolfNap", "werewolfPerks_TheWillToResist"],
+                "fairy": ["fairyPerks_BloomPlant", "fairyPerks_CureAilment", "fairyPerks_FairyInsight", "fairyPerks_PlantGrowth", "fairyPerks_ResistSpilloverBuffs"],
+                "ghost": ["ghostPowersPerks_ImproveLife", "ghostPowersPerks_InstantMaintenance", "ghostPowersPerks_InstantMaintenance_2", "ghostPowersPerks_InstantMaintenance_3", "ghostPowersPerks_NurtureLife", "ghostPowersPerks_PositivePresence", "ghostPowersPerks_SaveALife"]
+            },
+            "spells_all": [],
+            "spells_occult": {
+                "spellcaster": ["spells_Practical_1_Clean", "spells_Practical_1_Repair", "spells_Practical_2_Food", "spells_Practical_4_GrowPlant", "recipe_Drink_Cauldron_Potion_FeelGood", "recipe_Drink_Cauldron_Potion_RemoveCurses"]
+            }
         },
 
         "10": {
@@ -496,6 +547,11 @@ DEFAULT_CONFIG_STR = """{
         "option_3": {
             "adult_playable_male": "0", "adult_playable_female": "0", 
             "adult_npc_male": "1", "adult_npc_female": "1",
+            "child_playable": "10", "child_npc": "11"
+        },
+        "option_4": {
+            "adult_playable_male": "0", "adult_playable_female": "0", 
+            "adult_npc_male": "5", "adult_npc_female": "5",
             "child_playable": "10", "child_npc": "11"
         }
     },

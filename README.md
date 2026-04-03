@@ -53,7 +53,7 @@ Drücke im Spiel `Strg + Shift + C`, um die Konsole zu öffnen. Die Mod bringt e
 * `rmg.add name <Name>` - Verbindet einen Sim via Name mit deinem aktiven Sim. (Bei mehreren Treffern gibt die Konsole die IDs aus).
 * `rmg.id <SimID> [Set_ID|auto|option_xx] [debug]` - Wendet MakeGod auf einen Sim über seine interne ID an.  
 * `rmg.name "Bella Grusel" [Set_ID|auto|option_xx] [debug]` - Sucht nach einem Sim per Name.  
-* `rmg.bat <BatchName> [Arg1] [Arg2] ...` - Führt eine automatisierte Liste von Befehlen nacheinander aus (unterstützt Platzhalter).
+* `rmg.bat <BatchName> [id "ID1,ID2"|name "Name1,Name2"|active] [Arg1] [Arg2] ...` - Führt eine automatisierte Liste von Befehlen nacheinander aus (unterstützt Platzhalter und Listen-Targeting).
 * `rmg auto` - Kurzbefehl für `rmg all auto`.  
 * `rmg.dump active` oder `rmg.dump all` - Erstellt Export-Dateien deiner Sims (siehe unten).  
 * `rmg.dump reference` - Exportiert eine Master-Liste aller Spiel-Codes (siehe unten).
@@ -63,18 +63,32 @@ Drücke im Spiel `Strg + Shift + C`, um die Konsole zu öffnen. Die Mod bringt e
 ### 🤖 **Das Batch-System (rmg.bat)**
 Du kannst in der `make_god_config.json` unter dem Punkt `"batches"` eigene Listen von Befehlen definieren, die die Mod nacheinander abarbeiten soll. Das ist perfekt, wenn du bei einem neuen Spielstart immer wiederkehrende Szenarien aufbauen möchtest.
 
-**Dynamische Templates (Platzhalter):**
-Du kannst in deinen Batch-Befehlen Platzhalter wie `{0}`, `{1}` verwenden. Beim Aufruf des Batches in der EA-Konsole übergibst du die entsprechenden Werte einfach als Parameter. 
+**Sims direkt anvisieren (Targeting):**
+Du kannst einen Batch gezielt für eine Liste von Sims aufrufen:
+* `rmg.bat <BatchName> id "12345, 67890"`
+* `rmg.bat <BatchName> name "Yuki Behr, Bella Grusel"`
+* `rmg.bat <BatchName> active`
+
+**Kontext-Platzhalter für die anvisierten Sims:**
+In deinen Batch-Befehlen kannst du Platzhalter verwenden, die automatisch mit den Daten des gerade verarbeiteten Sims gefüllt werden:
+* `[sim_id]` - Die interne ID des Sims
+* `[sim_first]` - Der Vorname
+* `[sim_last]` - Der Nachname
+* `[sim_name]` - Der komplette Name (inkl. Anführungszeichen)
+
+**Dynamische Templates (Positions-Platzhalter):**
+Du kannst auch Platzhalter wie `{0}`, `{1}` verwenden. Beim Aufruf des Batches übergibst du die entsprechenden Werte einfach am Ende als Parameter. 
 *Wichtig:* Wenn du einen Vor- und Nachnamen als ein einziges Argument übergeben willst, musst du ihn zwingend in Anführungszeichen setzen!
 
 *Beispiel in der Config:*
 ```json
 "setup_npc": [
-    "rmg.add name {0}",
-    "rmg.name {0} 3"
+    "rmg.add id [sim_id]",
+    "rmg.id [sim_id] 3"
 ]
+```
 
-Eingabe im Spiel: rmg.bat setup_npc "Yuki Behr"
+Eingabe im Spiel: `rmg.bat setup_npc name "Yuki Behr, Bella Grusel"`
 
 (Achtung: Wenn du sehr viele Sims in einem einzigen Batch verarbeitest, kann das Spiel für einige Sekunden einfrieren, da die Engine alle Befehle nacheinander verarbeiten muss.)
 
@@ -127,7 +141,7 @@ Die Datei enthält ein eingebautes Lexikon (_help_set_parameter). Hier ist kurz 
 
 * **Fähigkeiten (Skills):** max_player_skills und max_npc_skills steuern, ob Skills überhaupt maximiert werden. Mit allowed_skills begrenzt du das auf bestimmte Skill-Namen. Mit allow_all_skills: true werden wirklich alle verfügbaren Skills maximiert.  
 * **Traits & Abneigungen:** traits_all und exclude_all steuern globale Trait-Filter. Der mächtige Schalter "remove_all_dislikes": true entfernt vollautomatisch alle [DISLIKE] Merkmale (Abneigungen gegen Farben, Musik, Hobbys), sodass dein Sim niemals mehr grundlos schlechte Laune bekommt.  
-* **Magie & Okkult-Vorteile:** Du kannst Perks (Ruhm & Okkult-Fähigkeiten) über perks_all / perks_occult und Zaubersprüche/Tränke über spells_all / spells_occult gezielt freischalten.  
+* **Magie & Okkult-Vorteile:** Du kannst Perks (Ruhm & Okkult-Fähigkeiten) über perks_all / perks_occult gezielt freischalten.  
 * **Beziehungen im Haushalt:** harmony_friendship, harmony_romance und target_relationship_status setzen Freundschaft, Romantik und Beziehungsstatus für Haushaltsmitglieder. Über remove_negative_relations, remove_negative_relations_household und remove_negative_relations_scope lassen sich außerdem Feindschaften, Groll und Angst-Bits gezielt im gesamten weltweiten Beziehungsnetz entfernen.
 
 ### **Okkulte Sims (Vampire, Werwölfe, Magier)**
@@ -145,6 +159,8 @@ Alle verfübaren Parameter auf einen Blick. Die `_help_set_parameter`-Sektion in
 | `language` | String | `"de"` | Sprache der eingebauten Hilfetexte (`"de"` oder `"en"`). |
 | `debug_log` | Boolean | `false` | `true` = jede Aktion wird detailliert geloggt und im Spiel angezeigt (bei `debug`-Befehl). |
 | `log_mode` | String | `"overwrite"` | `"overwrite"` = Log-Datei bei jedem Start neu erstellen; `"append"` = Einträge anhängen. |
+| `include_roommates_in_all` | Boolean | `true` | Bei `rmg.all` oder dem "Household"-Button werden offizielle Mitbewohner mit einbezogen. |
+| `include_keyholders_in_all` | Boolean | `true` | Bei `rmg.all` werden auch Freunde mit einem Haustürschlüssel berücksichtigt. |
 | `dump_blacklist_keywords` | Liste | *(technische Strings)* | Teilstrings, die beim Sim-Dump aus der Statistik-Ausgabe herausgefiltert werden, z. B. `"_high"`, `"caspartid"`. |
 | `manual_add_settings` -> `friendship` | Zahl | `100` | Freundschaftswert, der bei `rmg.add` zugewiesen wird (`-999` ignoriert). |
 | `manual_add_settings` -> `romance` | Zahl | `-999` | Romantikwert, der bei `rmg.add` zugewiesen wird (`-999` ignoriert). |
@@ -180,7 +196,7 @@ Die Config enthält zusätzlich den Abschnitt `"fallback_skills"`, der pro Alter
 | `freeze_motives` | Boolean | Setzt den Verfalls-Modifier der in `motives_to_fill` genannten Commodities auf `0`. Der Sim verliert diese Bedürfnisse dann nicht mehr automatisch. |
 | `motives_to_fill` | Objekt | Schlüssel: Okkult-Typ (`"human"`, `"vampire"`, `"spellcaster"`, `"werewolf"`, `"mermaid"`). Wert: Liste exakter Commodity-Namen, z. B. `"motive_hunger"` oder `"commodity_motive_vampire_thirst"`. |
 
-### Traits, Perks & Zauber
+### Traits & Perks
 
 | Schlüssel | Typ | Bedeutung |
 |-----------|-----|-----------|
@@ -194,8 +210,6 @@ Die Config enthält zusätzlich den Abschnitt `"fallback_skills"`, der pro Alter
 | `traits_occult` | Objekt | Okkult-Typ → Trait-Liste. Nur der Typ des aktuellen Sims wird berücksichtigt. |
 | `perks_all` | Liste | Okkult-/Ruhm-Perks für alle Sims freischalten (über den internen Bucks-Tracker). |
 | `perks_occult` | Objekt | Perks nach Okkult-Typ (`"vampire"`, `"spellcaster"`, `"werewolf"`). |
-| `spells_all` | Liste | Zauber, Tränke und Rezepte für alle Sims freischalten. |
-| `spells_occult` | Objekt | Zauber nach Okkult-Typ aufgeschlüsselt. |
 
 ### Beziehungen bereinigen & setzen
 
@@ -207,6 +221,7 @@ Die Config enthält zusätzlich den Abschnitt `"fallback_skills"`, der pro Alter
 | `remove_negative_relations` | Boolean | `true` = Scannt alle weltweiten Beziehungen. Sims, die ein Bit aus `remove_negative_relations_scope` tragen, werden von **allen** negativen Bits befreit. |
 | `remove_negative_relations_household` | Boolean | `true` = Haushaltsmitglieder werden **immer** bereinigt – unabhängig vom Scope. |
 | `remove_negative_relations_scope` | Liste | Bit-Namens-Fragmente (z. B. `"friend"`, `"romantic"`, `"married"`), die einem weltweiten Sim Kandidaten-Status verleihen. Als negativ gelten Bits wie `enemy`, `grudge`, `divorced`, `breakup`, `hostile`, `fear`. |
+| `harmony_extended_network` | Objekt | Eine erweiterte Matrix, um alters- und geschlechtsabhängig Beziehungen zu Freunden/Familie weltweit aufzubauen. (`enabled`: true/false, `scopes`: [...]) |
 
 **Beispiel:** `"remove_negative_relations": true` mit `"remove_negative_relations_scope": ["friend", "romantic", "married"]`  
 → Alle Freunde, Partner und Haushaltsmitglieder werden von Groll, Feindschaft und Angst befreit. Unbekannte Townies ohne Beziehung bleiben unberührt.
@@ -249,7 +264,7 @@ Mit dem Befehl rmg.dump id <SimID> (z. B. rmg.dump id 12345678) kannst du geziel
 
 **Wie vergebe ich Schluessel automatisch im Batch?**
 * Schluessel sind in der Sims-Engine zickig. Am stabilsten funktioniert es, wenn du den Trait `trait_HasKey` direkt in die `traits_all` oder `traits_sex_female` Liste deines Wunsch-Sets (z.B. Set 3) einträgst. 
-* Wenn du dann einen Batch wie `rmg.add name "Yuki Behr"` (Teleport) gefolgt von `rmg.name "Yuki Behr" 3` ausführst, bekommt sie den Schluessel garantiert.
+* Wenn du dann in deinem Skript `rmg.add id [sim_id]` (Teleport) gefolgt von `rmg.id [sim_id] 3` ausführst (via `rmg.bat setup_npc name "Yuki Behr"`), bekommt sie den Schluessel garantiert.
 
 **Der Button "Haushalt" fehlt bei einigen Sims!**
 
@@ -279,6 +294,7 @@ Mit dem Befehl rmg.dump id <SimID> (z. B. rmg.dump id 12345678) kannst du geziel
 * Die Namen müssen exakt mit dem internen `__name__`-Attribut der Engine übereinstimmen – nicht mit dem Anzeigenamen im Spiel.
 * Nutze rmg.dump reference, um die korrekten Namen direkt aus dem laufenden Spiel zu exportieren.
 * Okkult-Perks (Vampire, Magier, Werwölfe) können nur freigeschaltet werden, wenn der Sim den entsprechenden Okkult-Typ bereits hat.
+* **Wichtig für gespielte Sims:** Das Spiel initialisiert den internen Perk-Tracker oft erst, wenn das entsprechende Menü angesehen wird. Öffne das Vorteil-/Perk-Fenster deines Sims (z. B. Vampirkräfte oder Magier-Vorteile) mindestens einmal manuell im Spiel, bevor du MakeGod ausführst, damit das Skript die Perks erfolgreich eintragen kann.
 
 **rmg.name findet den Sim nicht!**
 

@@ -85,9 +85,9 @@ Diese Merkmale machen das Leben deiner Sims extrem einfach (Bedürfnisse sinken 
 * trait\_StormChaser \- Sturmjäger (Mögen Gewitter)  
 * trait\_NewInTown\_InspiredExplorer \- Inspirierter Entdecker
 
-## **🔮 Magie & Okkultes (Traits, Perks & Spells)**
+## **🔮 Magie & Okkultes (Traits & Perks)**
 
-Nutze für Traits am besten die traits\_occult, für Perks die perks\_occult und für Zauber die spells\_occult Arrays in der Config.  
+Nutze für Traits am besten die traits_occult und für Perks die perks_occult Arrays in der Config.  
 **Okkulte Traits (Merkmale):**
 
 * trait\_Occult\_WitchOccult\_BloodlineAncient \- Alte Magier-Blutlinie (Schnelleres Lernen, Schutz vor Überladung)  
@@ -103,17 +103,13 @@ Nutze für Traits am besten die traits\_occult, für Perks die perks\_occult und
 * vampirePerks\_PersonaPowers\_VampiricFascination\_Level3 \- Vampirische Faszination (Stufe 3\)  
 * vampirePerks\_SunlightReversal \- Sonnenlicht-Umkehrung (Resistent gegen Sonne)
 
-**Spellcaster Perks & Spells (Auszug für perks\_occult / spells\_occult):**
+**Spellcaster Perks (Auszug für perks_occult):**
 
 * witchPerks\_Spellcasting\_3\_Tiers \- Mächtiges Zaubern (Perk)  
 * witchPerks\_Alchemy\_3\_ExtraPotions \- Tränke-Meister (Perk)  
-* spell\_MindControl\_Clean \- Sauberkeits-Zauber (Spell)  
-* spell\_MindControl\_Romance \- Romantik-Zauber (Spell)  
-* recipe\_Potion\_Immortality \- Rezept für den Unsterblichkeitstrank (Spell/Recipe)
 
-### Wichtige Hinweise für Okkulte (Spells & Perks)
+### Wichtige Hinweise für Okkulte (Perks)
 * **Perks (Vampire, Werwölfe, Spellcaster):** Perks müssen als String in `perks_occult` eingetragen werden. Das Modul berücksichtigt Ränge (z.B. Level 1 vor Level 2) automatisch.
-* **Spells (Zauberbuch):** Spells müssen über `spells_occult` definiert werden. Verwenden Sie den exakten Namen des SNIPPETS oder RECIPES aus dem Reference-Dump (z. B. `Zero:recipe_PlayAsTheSage_Book_Mischief_1_Confuse` oder Vanilla-Snippets wie `spells_...`).
 
 ## **🎭 Persönlichkeits-Merkmale (Basisspiel)**
 
