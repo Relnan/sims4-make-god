@@ -210,7 +210,8 @@ def _apply_status_bit_via_command(sim_id, target_id, status):
 # --- MANUELLE LOGIK FÜR RMG.ADD ---
 def apply_manual_relation(sim_info, target_sim, settings, out, force_debug=False):
     """
-    Wendet Friendship und Romance basierend auf der Config direkt an.
+    Stellt die Verbindung her: Bekanntmachen (HasMet), Friendship/Romance 
+    und physischer Teleport. Schluessel werden manuell im Spiel vergeben.
     """
     try:
         tracker = getattr(sim_info, 'relationship_tracker', None)
@@ -218,30 +219,38 @@ def apply_manual_relation(sim_info, target_sim, settings, out, force_debug=False
         
         target_id = target_sim.sim_id
         
-        # 1. Fallback Werte holen
-        t_friendship = settings.get("friendship", 1)
+        # 1. Bekanntmachen (HasMet) - Schaltet soziale Interaktionen frei
+        try:
+            # 15803 = relbit_HasMet
+            sims4.commands.execute(f"relationship.add_bit {sim_info.sim_id} {target_id} 15803", None)
+        except: pass
+
+        # 2. Friendship / Romance setzen
+        t_friendship = settings.get("friendship", 100)
         t_romance = settings.get("romance", -999)
+        spawn_sim = settings.get("spawn_sim", True)
         
-        # 2. Culling-Schutz (Verhindert MCCC Löschung)
-        if t_friendship <= 0 and t_friendship != -999:
-            t_friendship = 1
-            
         skill_manager = services.get_instance_manager(sims4.resources.Types.STATISTIC)
         f_track = skill_manager.get(16650) if skill_manager else None
-        r_track = skill_manager.get(16651) if skill_manager else None
         
-        if t_friendship != -999 and f_track:
+        if f_track:
             tracker.set_relationship_score(target_id, t_friendship, f_track)
             out(f" -> Friendship gesetzt auf: {t_friendship}")
-            mg_logger.log(f"   [rmg.add] Friendship zu {target_sim.first_name} auf {t_friendship} gesetzt.", is_debug=True, out=None, force_debug=force_debug)
             
-        if t_romance != -999 and r_track:
-            if getattr(sim_info, 'age', 0) >= 8 and getattr(target_sim, 'age', 0) >= 8:
-                tracker.set_relationship_score(target_id, t_romance, r_track)
-                out(f" -> Romance gesetzt auf: {t_romance}")
-                mg_logger.log(f"   [rmg.add] Romance zu {target_sim.first_name} auf {t_romance} gesetzt.", is_debug=True, out=None, force_debug=force_debug)
-            else:
-                out(" -> [INFO] Romance ignoriert (Mindestalter nicht erreicht).")
+        # 3. Teleport (Wachmacher)
+        if spawn_sim:
+            client = services.client_manager().get_first_client()
+            client_id = client.id if client else None
+            sims4.commands.execute(f"sims.summon_sim_to_zone {target_id}", client_id)
+            
+            # API Fallback
+            try:
+                if hasattr(target_sim, 'inject_into_zone'):
+                    current_zone = getattr(services, 'current_zone', lambda: None)()
+                    if current_zone: target_sim.inject_into_zone(current_zone.id)
+            except: pass
+
+            out(" -> [INFO] Ziel-Sim wurde auf das aktuelle Grundstueck teleportiert.")
 
     except Exception as e:
         out(f"[FEHLER] apply_manual_relation: {e}")

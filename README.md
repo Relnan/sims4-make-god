@@ -9,10 +9,10 @@ Egal, ob du einen unsterblichen Super-Vampir, ein absolutes Wunderkind oder einf
 Die Installation ist super einfach und erfordert nur zwei Schritte:
 
 1. Lade dir die neueste Version von MakeGod herunter. Du erhältst zwei Dateien:  
-   * make_god.ts4script (Die Logik und das Gehirn der Mod)  
-   * Relnan_MakeGod_UI.package (Das Ingame-Menü, falls verfügbar)  
+   * `make_god.ts4script` (Die Logik und das Gehirn der Mod)  
+   * `Relnan_MakeGod_UI.package` (Das Ingame-Menü, falls verfügbar)  
 2. Kopiere **beide Dateien** in deinen Die Sims 4 Mods-Ordner.  
-   * Standard-Pfad: Dokumente\Electronic Arts\Die Sims 4\Mods  
+   * Standard-Pfad: `Dokumente\Electronic Arts\Die Sims 4\Mods`  
 3. **WICHTIG:** Gehe im Spiel in die Optionen unter "Weiteres" und stelle sicher, dass **"Benutzerdefinierte Inhalte und Mods aktivieren"** sowie **"Script-Mods erlaubt"** mit einem Häkchen versehen sind!
 
 ## **🚀 Schnellstart für Einsteiger (2 Minuten)**
@@ -21,12 +21,12 @@ Wenn du nur kopieren und einfache Dateien bearbeiten kannst, reicht das hier vö
 
 1. Installiere die Mod wie oben beschrieben.  
 2. Starte das Spiel und lade einen Haushalt.  
-3. Öffne die Cheat-Konsole mit Strg + Shift + C.  
-4. Gib ein: rmg.active  
+3. Öffne die Cheat-Konsole mit `Strg + Shift + C`.  
+4. Gib ein: `rmg.active`  
 5. **Fertig.** Dein aktuell ausgewählter Sim bekommt das ultimative "God-Setup" (Maximale Skills, Millionen Simoleons, keine schlechte Laune mehr, ewige Bedürfnisse).
 
 Wenn du den **ganzen Haushalt** auf einmal upgraden willst:  
-Gib in die Konsole einfach rmg.all ein.
+Gib in die Konsole einfach `rmg.all` ein.
 
 ## **🎮 Wie benutze ich die Mod im Spiel?**
 
@@ -44,20 +44,39 @@ Sobald du im Live-Modus bist, hast du zwei Möglichkeiten, die Mod zu nutzen: ü
 
 ### **⌨️ Methode 2: Die Cheat-Konsole (einfach und zuverlässig)**
 
-Drücke im Spiel Strg + Shift + C, um die Konsole zu öffnen. Die Mod bringt eigene Befehle mit, die du eintippen kannst:
+Drücke im Spiel `Strg + Shift + C`, um die Konsole zu öffnen. Die Mod bringt eigene Befehle mit, die du eintippen kannst:
 
-* rmg - Zeigt die integrierte Hilfe in der Cheat-Konsole.  
-* rmg.all [Set_ID|auto|option_xx] [debug] - Wendet MakeGod auf den ganzen aktiven Haushalt an.  
-* rmg.active [Set_ID|auto|option_xx] [debug] - Wendet MakeGod auf den aktuell ausgewählten Sim an.
-* rmg.add id <SimID> - Verbindet einen Sim gezielt via ID mit deinem aktiven Sim (Freundschaft/Romantik/Keyholder).
-* rmg.add name <Name> - Verbindet einen Sim via Name mit deinem aktiven Sim. (Bei mehreren Treffern gibt die Konsole die IDs aus).
-* rmg.id <SimID> [Set_ID|auto|option_xx] [debug] - Wendet MakeGod auf einen Sim über seine interne ID an.  
-* rmg.name "Bella Grusel" [Set_ID|auto|option_xx] [debug] - Sucht nach einem Sim per Name.  
-* rmg auto - Kurzbefehl für rmg all auto.  
-* rmg.dump active oder rmg.dump all - Erstellt Export-Dateien deiner Sims (siehe unten).  
-* rmg.dump reference - Exportiert eine Master-Liste aller Spiel-Codes (siehe unten).
+* `rmg` - Zeigt die integrierte Hilfe in der Cheat-Konsole.  
+* `rmg.all [Set_ID|auto|option_xx] [debug]` - Wendet MakeGod auf den ganzen aktiven Haushalt an.  
+* `rmg.active [Set_ID|auto|option_xx] [debug]` - Wendet MakeGod auf den aktuell ausgewählten Sim an.
+* `rmg.add id <SimID>` - Verbindet einen Sim gezielt via ID mit deinem aktiven Sim (Freundschaft/Romantik).
+* `rmg.add name <Name>` - Verbindet einen Sim via Name mit deinem aktiven Sim. (Bei mehreren Treffern gibt die Konsole die IDs aus).
+* `rmg.id <SimID> [Set_ID|auto|option_xx] [debug]` - Wendet MakeGod auf einen Sim über seine interne ID an.  
+* `rmg.name "Bella Grusel" [Set_ID|auto|option_xx] [debug]` - Sucht nach einem Sim per Name.  
+* `rmg.bat <BatchName> [Arg1] [Arg2] ...` - Führt eine automatisierte Liste von Befehlen nacheinander aus (unterstützt Platzhalter).
+* `rmg auto` - Kurzbefehl für `rmg all auto`.  
+* `rmg.dump active` oder `rmg.dump all` - Erstellt Export-Dateien deiner Sims (siehe unten).  
+* `rmg.dump reference` - Exportiert eine Master-Liste aller Spiel-Codes (siehe unten).
 
-*Tipp:* Mit dem Zusatz debug (z.B. rmg.active 0 debug) bekommst du ausführlichere Ausgaben und Log-Einträge.
+*Tipp:* Mit dem Zusatz `debug` (z.B. `rmg.active 0 debug`) bekommst du ausführlichere Ausgaben und Log-Einträge. Das Wort `debug` muss dabei immer am Ende des Befehls stehen.
+
+### 🤖 **Das Batch-System (rmg.bat)**
+Du kannst in der `make_god_config.json` unter dem Punkt `"batches"` eigene Listen von Befehlen definieren, die die Mod nacheinander abarbeiten soll. Das ist perfekt, wenn du bei einem neuen Spielstart immer wiederkehrende Szenarien aufbauen möchtest.
+
+**Dynamische Templates (Platzhalter):**
+Du kannst in deinen Batch-Befehlen Platzhalter wie `{0}`, `{1}` verwenden. Beim Aufruf des Batches in der EA-Konsole übergibst du die entsprechenden Werte einfach als Parameter. 
+*Wichtig:* Wenn du einen Vor- und Nachnamen als ein einziges Argument übergeben willst, musst du ihn zwingend in Anführungszeichen setzen!
+
+*Beispiel in der Config:*
+```json
+"setup_npc": [
+    "rmg.add name {0}",
+    "rmg.name {0} 3"
+]
+
+Eingabe im Spiel: rmg.bat setup_npc "Yuki Behr"
+
+(Achtung: Wenn du sehr viele Sims in einem einzigen Batch verarbeitest, kann das Spiel für einige Sekunden einfrieren, da die Engine alle Befehle nacheinander verarbeiten muss.)
 
 ## **⚙️ Wie passe ich die Mod an? (Die Config-Datei)**
 
@@ -86,7 +105,7 @@ Standardmäßig gibt es z.B.:
 | Set-ID | Name | Zielgruppe | Kernfunktionen |
 |--------|------|------------|----------------|
 | `0` | Ultimate God | Spielbarer Erwachsener | Alle Skills + Karrieren max., 9,9 Mio. Simoleons, Bedürfnisse einfrieren, negative Traits entfernen, WickedWhims-Traits |
-| `1` | Mortal Lover | NPC-Partner | Freundschaft + Romantik 100, Status „Bedeutende/r Andere/r", wenige Trait-Korrekturen |
+| `1` | Mortal Lover | NPC-Partner | Freundschaft + Romantik 100, Status "Bedeutende/r Andere/r", wenige Trait-Korrekturen |
 | `2` | Vanilla NPC | Neutraler Townie | Freundschaft 50, keinerlei Geld- oder Skill-Eingriff |
 | `3` | Enhanced NPC | Weibliche Roommates/NPCs | MCCC/WW Flags, Unsterblichkeit, diverse positive Traits, keine negativen Traits |
 | `10` | Blessed Child | Spielbares Kind / Kleinkind | Altersgerechte Skills, Bedürfnisse einfrieren, Kindheits-Boni |
@@ -129,7 +148,7 @@ Alle verfübaren Parameter auf einen Blick. Die `_help_set_parameter`-Sektion in
 | `dump_blacklist_keywords` | Liste | *(technische Strings)* | Teilstrings, die beim Sim-Dump aus der Statistik-Ausgabe herausgefiltert werden, z. B. `"_high"`, `"caspartid"`. |
 | `manual_add_settings` -> `friendship` | Zahl | `100` | Freundschaftswert, der bei `rmg.add` zugewiesen wird (`-999` ignoriert). |
 | `manual_add_settings` -> `romance` | Zahl | `-999` | Romantikwert, der bei `rmg.add` zugewiesen wird (`-999` ignoriert). |
-| `manual_add_settings` -> `add_keyholder`| Boolean| `true` | Weist dem per `rmg.add` angesprochenen Sim den Hausschlüssel zu (ignoriert auf Apartments). |
+| `manual_add_settings` -> `spawn_sim` | Boolean| `false` | `true` = Bei `rmg.add` wird der Sim physisch zu deinem aktiven Sim teleportiert. Löst das MCCC-Flags Problem! |
 
 ### Skills & Karriere
 
@@ -223,6 +242,15 @@ Mit dem Befehl rmg.dump id <SimID> (z. B. rmg.dump id 12345678) kannst du geziel
 * Versteckt sich die Option vielleicht unter "Aktionen" -> "Mehr Auswahl..."?  
 * Falls das Menü durch andere Mods blockiert wird, funktionieren die Text-Befehle (rmg.active) über die Konsole trotzdem immer zu 100%!
 
+**Mein Batch-Skript / rmg.name setzt keine Flags bei Townies (z.B. MCCC/WickedWhims)!**
+
+* Drittanbieter-Mods registrieren Trait-Änderungen oft nur, wenn der Sim als "Instanced" (physisch auf dem Grundstück geladen) markiert ist. Befindet sich der Townie "schlafend" in seinem Haus, speichert EA zwar das Trait, aber Mods wie MCCC blockieren das Update in ihrer Datenbank.
+* **Die Lösung:** Aktiviere `"spawn_sim": true` in deiner `make_god_config.json` unter `"manual_add_settings"`. Rufst du den NPC in deinem Batch nun zuerst über `rmg.add` auf, teleportiert das Skript ihn sofort physisch zu deinem Sim. Anschließend funktioniert die Zuweisung über `rmg.name` fehlerfrei!
+
+**Wie vergebe ich Schluessel automatisch im Batch?**
+* Schluessel sind in der Sims-Engine zickig. Am stabilsten funktioniert es, wenn du den Trait `trait_HasKey` direkt in die `traits_all` oder `traits_sex_female` Liste deines Wunsch-Sets (z.B. Set 3) einträgst. 
+* Wenn du dann einen Batch wie `rmg.add name "Yuki Behr"` (Teleport) gefolgt von `rmg.name "Yuki Behr" 3` ausführst, bekommt sie den Schluessel garantiert.
+
 **Der Button "Haushalt" fehlt bei einigen Sims!**
 
 * Das ist pure Absicht als Schutzmaßnahme. Der Haushalt-Button wird bei NPCs (Townies, Briefträger etc.) absichtlich versteckt, damit du nicht versehentlich Familien, die du nicht spielst, in Götter verwandelst.
@@ -260,7 +288,7 @@ Mit dem Befehl rmg.dump id <SimID> (z. B. rmg.dump id 12345678) kannst du geziel
 
 **Ich habe rmg.add benutzt, aber die Beziehungswerte stimmen nicht / ändern sich nicht!**
 
-* *Wichtig:* Sims, die aktuell nicht aktiv im Level geladen sind ("Hidden"), können einige Beziehungs-Updates teilweise ignorieren oder das Update schlägt stumm fehl. Für beste Ergebnisse solltest du den Befehl verwenden, wenn der Ziel-Sim in der Nähe ist.
+* *Wichtig:* Sims, die aktuell nicht aktiv im Level geladen sind ("Hidden"), können einige Beziehungs-Updates teilweise ignorieren oder das Update schlägt stumm fehl. Nutze auch hier `"spawn_sim": true` in der Config, um den Sim für das Update zuverlässig zu dir zu rufen.
 
 **Beziehungen oder Geld werden nach einem Spielupdate zurückgesetzt!**
 

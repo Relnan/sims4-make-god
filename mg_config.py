@@ -19,8 +19,34 @@ DEFAULT_CONFIG_STR = """{
     "include_roommates_in_all": true,
     "include_keyholders_in_all": true,
     
+    "manual_add_settings": {
+        "_comment": "Einstellungen fuer rmg.add. Werte -999 ignorieren die Zuweisung. spawn_sim teleportiert den Sim zu dir.",
+        "friendship": 100,
+        "romance": -999,
+        "spawn_sim": false
+    },
+
+    "batches": {
+        "_comment": "Befehlslisten. Platzhalter wie {0}, {1} werden durch zusaetzliche Parameter ersetzt (z.B. rmg.bat setup_npc \\"yuki behr\\").",
+        "test_batch": [
+            "rmg.dump all",
+            "rmg.all",
+            "rmg.dump all"
+        ],
+        "setup_npc": [
+            "rmg.add name {0}",
+            "rmg.name {0} 3"
+        ],
+        "setup_couple": [
+            "rmg.add name {0}",
+            "rmg.name {0} 3",
+            "rmg.add name {1}",
+            "rmg.name {1} 1"
+        ]
+    },
+
     "_comment_dump": "Filtert technische Statistiken heraus, um den Dump sauber zu halten.",
-    "dump_blacklist_keywords": ["_error", "_high", "_low", "caspartid", "index_0", "index_1", "index_2", "index_3"],
+    "dump_blacklist_keywords": ["_error", "_high", "_low", "caspartid", "index_0", "index_1", "index_2", "index_3", "ww_"],
     
     "_comment_sets": "=== DEINE SIMS-EINSTELLUNGEN (SETS) ===",
     "sets": {
@@ -311,6 +337,64 @@ DEFAULT_CONFIG_STR = """{
             "spells_occult": {}
         },
 
+        "3": {
+            "name": "Female Enhanced NPC/Roommate",
+            "luck": {"value": 100},
+            "allow_all_skills": false,
+            "max_player_skills": false,
+            "max_npc_skills": true,
+            "allowed_skills": [],
+            "master_player_careers": false,
+            "master_npc_careers": false,
+            "harmony_friendship": 100,
+            "harmony_romance": 100,
+            "target_relationship_status": "woohoo_partner",
+            "remove_negative_relations": true,
+            "remove_negative_relations_household": false,
+            "remove_negative_relations_scope": ["roommate", "key", "friend", "romantic", "woohoo", "significant"],
+            "harmony_extended_network": {"enabled": false},
+            "satisfaction_points": 0,
+            "add_funds": 0,
+            "max_funds": 50000,
+            "fill_motives_mode": "config",
+            "freeze_motives": true,
+            "motives_to_fill": {
+                "human": ["motive_hunger", "motive_energy", "motive_bladder", "motive_hygiene", "motive_social", "motive_fun"]
+            },
+            "remove_all_dislikes": true,
+            "exclude_all": [
+                "trait_Evil", "trait_Mean", "trait_HotHeaded", "trait_Jealous", "trait_Gloomy", 
+                "trait_Clumsy", "trait_Slob", "trait_Unflirty", "trait_Insane", "trait_Squeamish", "trait_Lazy"
+            ],
+            "exclude_sex_male": [],
+            "exclude_sex_female": [],
+            "traits_all": [],
+            "traits_sex_male": [],
+            "traits_sex_female": [
+                "trait_GenderOptions_AttractedTo_Female",
+                "trait_GenderOptions_AttractedTo_Male",
+                "trait_Doctor_SicknessResistant",
+                "trait_Cauldron_Potion_Immortality",
+                "trait_Antiseptic",
+                "trait_Shameless",
+                "trait_Beguiling",
+                "trait_GreatKisser",
+                "trait_Fertile",
+                "trait_Alluring",
+                "trait_AlwaysWelcome",
+                "trait_Carefree",
+                "trait_Observant"
+            ],
+            "traits_occult": {},
+            "remove_unlisted_perks": false,
+            "perks_exclude_all": [],
+            "perks_exclude_occult": {},
+            "perks_all": [],
+            "perks_occult": {},
+            "spells_all": [],
+            "spells_occult": {}
+        },
+
         "10": {
             "name": "Blessed Child (Gespieltes Kind)",
             "luck": {"value": 100},
@@ -401,7 +485,7 @@ DEFAULT_CONFIG_STR = """{
     "auto_profiles": {
         "option_1": {
             "adult_playable_male": "0", "adult_playable_female": "0", 
-            "adult_npc_male": "1", "adult_npc_female": "1",
+            "adult_npc_male": "1", "adult_npc_female": "3",
             "child_playable": "10", "child_npc": "11"
         },
         "option_2": {
