@@ -1,12 +1,31 @@
-# **🌟 MakeGod Mod für Die Sims 4**
+# 🌟 MakeGod Mod für Die Sims 4
 
-Willkommen bei **MakeGod**! Dies ist nicht einfach nur eine weitere Cheat-Mod - es ist ein extrem mächtiges, blitzschnelles und hochgradig anpassbares Werkzeug, um das Leben deiner Sims mit nur einem einzigen Klick komplett zu perfektionieren (oder zu ruinieren, je nachdem, was du in der Konfiguration einstellst!).  
-Egal, ob du einen unsterblichen Super-Vampir, ein absolutes Wunderkind oder einfach nur den perfekten Nachbarn erschaffen willst: MakeGod erledigt in einem Bruchteil einer Sekunde das, wofür du sonst stundenlang Cheats eintippen müsstest.  
-*Der Mod ist ein Hobby-Projekt zum Kennenlernen der Modding-Funktionalität, und ich übernehme keine Gewähr auf Vollständigkeit.* *INFO: Der Mod wurde fast ausschließlich mit Unterstützung von KI (Gemini) erstellt.*
+Willkommen bei **MakeGod**! Das ist keine gewöhnliche Cheat-Mod, sondern ein schnelles und anpassbares Werkzeug, um deine Sims mit wenigen Klicks oder Befehlen massiv zu verändern.  
+Egal, ob du einen unsterblichen Super-Vampir, ein Wunderkind oder einfach nur den perfekten Nachbarn erschaffen willst: MakeGod spart dir eine Menge Einzel-Cheats und wiederholte Handarbeit.  
 
-## **📥 Installation**
+> **Hinweis:** Der Mod ist ein Hobby-Projekt zum Kennenlernen der Modding-Funktionalität. Es gibt keine Gewähr auf Vollständigkeit. Große Teile wurden mit Unterstützung von KI (Gemini) erstellt.
 
-Die Installation ist super einfach und erfordert nur zwei Schritte:
+## ⚙️ Voraussetzungen & Empfehlungen
+
+Für das volle MakeGod-Erlebnis und alle UI-Funktionen beachte bitte die folgenden Voraussetzungen und optionalen Ergänzungen:
+
+### 🔴 Zwingend erforderlich
+* **[XML Injector](https://scumbumbomods.com/xml-injector) (von Scumbumbo / Triplis):**
+  Für das Shift-Klick-Menü ist dieses Skript erforderlich. Ohne den XML Injector kann das `MakeGod`-Menü im Spiel nicht geladen werden. Stelle also sicher, dass die Dateien korrekt im `Mods`-Ordner liegen.
+
+### 🟡 Dringend empfohlen (für das Profil „Ultimate God“)
+Fehlen die folgenden Mods, sollten die zugehörigen Spezialzuweisungen in der Regel einfach übersprungen werden. Mit ihnen kann Set `0` jedoch deutlich mehr Zusatz-Features anwenden:
+* **MC Command Center (von Deaderpool):** MakeGod nutzt spezielle MCCC-Flags, um deinen Sim vor dem EA-Lösch-Algorithmus zu schützen, seine Muskeln/Statur einzufrieren und ihm bei Bedarf Eifersucht zu nehmen oder Polyamorie zu erlauben.
+* **WickedWhims (von TURBODRIVER):** Nutzt zusätzliche WW-Traits wie „Unique Looks“ oder „Generous Lover“ sowie weitere passende WickedWhims-Eigenschaften aus der Konfiguration.
+
+### 🟢 Nützliche Ergänzungen (Perfekt für eigene Macros)
+Diese Mods sind für das MakeGod-Skript nicht erforderlich, harmonieren aber perfekt mit dem God-Mode-Spielstil und deinen eigenen Erweiterungen in der `make_god_config.json`:
+* **AllCheats (von TwistedMexi):** MakeGod braucht eigentlich keinen Cheat-Unlocker. Wenn du jedoch in der Config-Datei eigene Batches und Menü-Optionen (Macros) baust und dort tiefgreifende, von EA eigentlich gesperrte Entwickler-Cheats eintragen möchtest, schaltet AllCheats diese für dich frei.
+* **UI Cheats Extension (von weerbesu):** Die perfekte Ergänzung zu unserem Shift-Klick-Menü. Es erlaubt dir das direkte Verändern von UI-Elementen (wie Linksklick auf Bedürfnisbalken, Finanzen oder Uhrzeiten) ganz ohne Menü-Navigation.
+
+## 📥 Installation
+
+Die Installation ist unkompliziert und in wenigen Minuten erledigt:
 
 1. Lade dir die neueste Version von MakeGod herunter. Du erhältst zwei Dateien:  
    * `make_god.ts4script` (Die Logik und das Gehirn der Mod)  
@@ -15,7 +34,7 @@ Die Installation ist super einfach und erfordert nur zwei Schritte:
    * Standard-Pfad: `Dokumente\Electronic Arts\Die Sims 4\Mods`  
 3. **WICHTIG:** Gehe im Spiel in die Optionen unter "Weiteres" und stelle sicher, dass **"Benutzerdefinierte Inhalte und Mods aktivieren"** sowie **"Script-Mods erlaubt"** mit einem Häkchen versehen sind!
 
-## **🚀 Schnellstart für Einsteiger (2 Minuten)**
+## 🚀 Schnellstart für Einsteiger (2 Minuten)
 
 Wenn du nur kopieren und einfache Dateien bearbeiten kannst, reicht das hier völlig:
 
@@ -28,39 +47,40 @@ Wenn du nur kopieren und einfache Dateien bearbeiten kannst, reicht das hier vö
 Wenn du den **ganzen Haushalt** auf einmal upgraden willst:  
 Gib in die Konsole einfach `rmg.all` ein.
 
-## **🎮 Wie benutze ich die Mod im Spiel?**
+## 🎮 Wie benutze ich die Mod im Spiel?
 
-Sobald du im Live-Modus bist, hast du zwei Möglichkeiten, die Mod zu nutzen: über das bequeme Klick-Menü oder über Profi-Textbefehle.
+Im Live-Modus hast du zwei Möglichkeiten: über das Ingame-Menü oder über die Cheat-Konsole.
 
-### **🖱️ Methode 1: Das Klick-Menü (Empfohlen für jeden)**
+### 🖱️ Methode 1: Das Klick-Menü
 
-1. Klicke einfach auf irgendeinen Sim (egal ob es dein eigener ist oder ein fremder Townie auf der Straße).  
-2. Gehe in das Menü **Aktionen**.  
-3. Dort findest du nun die neuen Optionen:  
-   * **Make God - Sim Option 1:** Wendet dein "Profil 1" (Standard: Absolute Perfektion) auf diesen einen Sim an.  
-   * **Make God - Sim Option 2:** Wendet dein "Profil 2" auf diesen Sim an.  
-   * **Make God - Sim Option 3:** Wendet dein "Profil 3" auf diesen Sim an.  
-   * **Make God - Household:** *Dieser Button taucht nur bei deinen gespielten Sims auf!* Er wendet MakeGod blitzschnell auf den **kompletten Haushalt** an.
+Je nach UI-Version findest du die Einträge entweder über **Aktionen** oder per **Shift+Klick > MakeGod**. Standardmäßig sind vor allem **Option 1 bis 3** belegt; zusätzlich lassen sich bis zu **5 Makro-Buttons** über die Config definieren.
 
-### **⌨️ Methode 2: Die Cheat-Konsole (einfach und zuverlässig)**
+1. Klicke auf einen Sim.  
+2. Öffne das Menü **MakeGod** bzw. **Aktionen**.  
+3. Wähle eine passende Aktion:  
+   * **Option 1 / 2 / 3:** Führt das jeweils zugewiesene Profil bzw. Makro aus.  
+   * **Option 4 / 5:** Optional frei belegbare Zusatzaktionen über `macros`.  
+   * **Household:** Nur bei spielbaren Sims sichtbar; wendet MakeGod auf den aktiven Haushalt an.
 
-Drücke im Spiel `Strg + Shift + C`, um die Konsole zu öffnen. Die Mod bringt eigene Befehle mit, die du eintippen kannst:
+### ⌨️ Methode 2: Die Cheat-Konsole
 
-* `rmg` - Zeigt die integrierte Hilfe in der Cheat-Konsole.  
-* `rmg.all [Set_ID|auto|option_xx] [debug]` - Wendet MakeGod auf den ganzen aktiven Haushalt an.  
-* `rmg.active [Set_ID|auto|option_xx] [debug]` - Wendet MakeGod auf den aktuell ausgewählten Sim an.
-* `rmg.add id <SimID>` - Verbindet einen Sim gezielt via ID mit deinem aktiven Sim (Freundschaft/Romantik).
-* `rmg.add name <Name>` - Verbindet einen Sim via Name mit deinem aktiven Sim. (Bei mehreren Treffern gibt die Konsole die IDs aus).
-* `rmg.id <SimID> [Set_ID|auto|option_xx] [debug]` - Wendet MakeGod auf einen Sim über seine interne ID an.  
-* `rmg.name "Bella Grusel" [Set_ID|auto|option_xx] [debug]` - Sucht nach einem Sim per Name.  
-* `rmg.bat <BatchName> [id "ID1,ID2"|name "Name1,Name2"|active] [Arg1] [Arg2] ...` - Führt eine automatisierte Liste von Befehlen nacheinander aus (unterstützt Platzhalter und Listen-Targeting).
-* `rmg auto` - Kurzbefehl für `rmg all auto`.  
-* `rmg.dump active` oder `rmg.dump all` - Erstellt Export-Dateien deiner Sims (siehe unten).  
-* `rmg.dump reference` - Exportiert eine Master-Liste aller Spiel-Codes (siehe unten).
+Drücke im Spiel `Strg + Shift + C`, um die Konsole zu öffnen. Die Mod bringt eigene Befehle mit, die du direkt eintippen kannst:
+
+* `rmg` – Zeigt die integrierte Hilfe in der Cheat-Konsole.  
+* `rmg.all [Set_ID|auto|option_1] [override] [debug]` – Wendet MakeGod auf den aktiven Haushalt an.  
+* `rmg.active [Set_ID|auto|option_1] [override] [debug]` – Wendet MakeGod auf den aktuell ausgewählten Sim an.  
+* `rmg.add id <SimID>` – Verbindet einen Sim gezielt via ID mit deinem aktiven Sim (Freundschaft/Romantik).  
+* `rmg.add name <Name>` – Verbindet einen Sim via Name mit deinem aktiven Sim. Bei mehreren Treffern listet die Konsole die IDs auf.  
+* `rmg.id <SimID> [Set_ID|auto|option_1] [override] [debug]` – Wendet MakeGod auf einen Sim über seine interne ID an.  
+* `rmg.name "Bella Grusel" [Set_ID|auto|option_1] [override] [debug]` – Sucht nach einem Sim per Name und wendet das Set an.  
+* `rmg.bat <BatchName> [id "ID1,ID2"|name "Name1,Name2"|active] [Arg0] [Arg1] ...` – Führt eine automatisierte Liste von Befehlen nacheinander aus.  
+* `rmg.dump` oder `rmg.dump active` – Erstellt Export-Dateien für den aktiven Sim.  
+* `rmg.dump all` – Erstellt Export-Dateien für den ganzen Haushalt.  
+* `rmg.dump reference` – Exportiert eine Master-Liste aller geladenen Traits, Zauber, Tränke und Perks.
 
 *Tipp:* Mit dem Zusatz `debug` (z.B. `rmg.active 0 debug`) bekommst du ausführlichere Ausgaben und Log-Einträge. Das Wort `debug` muss dabei immer am Ende des Befehls stehen.
 
-### 🤖 **Das Batch-System (rmg.bat)**
+### 🤖 Das Batch-System (`rmg.bat`)
 Du kannst in der `make_god_config.json` unter dem Punkt `"batches"` eigene Listen von Befehlen definieren, die die Mod nacheinander abarbeiten soll. Das ist perfekt, wenn du bei einem neuen Spielstart immer wiederkehrende Szenarien aufbauen möchtest.
 
 **Sims direkt anvisieren (Targeting):**
@@ -92,12 +112,12 @@ Eingabe im Spiel: `rmg.bat setup_npc name "Yuki Behr, Bella Grusel"`
 
 (Achtung: Wenn du sehr viele Sims in einem einzigen Batch verarbeitest, kann das Spiel für einige Sekunden einfrieren, da die Engine alle Befehle nacheinander verarbeiten muss.)
 
-## **⚙️ Wie passe ich die Mod an? (Die Config-Datei)**
+## ⚙️ Wie passe ich die Mod an? (Die Config-Datei)
 
 Das wahre Herzstück dieser Mod ist die **Konfigurationsdatei**.  
 Startest du das Spiel mit der Mod, generiert sie automatisch eine make_god_config.json in deinem Mods-Ordner. Du kannst sie mit jedem Texteditor (wie dem normalen Windows Editor oder Notepad++) öffnen.
 
-### **Einsteiger-Modus: Nur 3 Dinge ändern**
+### Einsteiger-Modus: Nur 3 Dinge ändern
 
 Wenn du möglichst wenig anfassen willst, ändere nur diese Punkte in make_god_config.json:
 
@@ -105,7 +125,7 @@ Wenn du möglichst wenig anfassen willst, ändere nur diese Punkte in make_god_c
 2. Im gewünschten Set ("0", "1", "10" ...) nur traits_all anpassen.  
 3. Optional add_funds ändern, wenn du mehr oder weniger Geld geben willst.
 
-### **Was sind "Sets"?**
+### Was sind "Sets"?
 
 In der Datei findest du einen Bereich namens "sets". Ein Set ist quasi ein Bauplan für einen Sim.  
 Ein Set kann unter anderem Traits hinzufügen oder entfernen, Abneigungen löschen, Skills maximieren, Karrieren pushen, Zufriedenheitspunkte vergeben, Bedürfnisse einfrieren, Beziehungen innerhalb des Haushalts setzen und Haushaltsgeld anpassen.  
@@ -114,7 +134,7 @@ Standardmäßig gibt es z.B.:
 * **Set 0 (Ultimate God):** Der Sim kriegt alle Fähigkeiten auf Maximum, alle Karrieren auf Stufe 10, Millionen von Simoleons, negative Merkmale (wie "Böse" oder Abneigungen) werden gelöscht und seine Bedürfnisse frieren für immer auf Maximum ein. Zudem lernt er alle Zauber und Okkult-Perks.  
 * **Set 10 (Blessed Child):** Das perfekte Kinder-Profil. Karrieren werden ignoriert, aber die Kinder-Fähigkeiten (Motorik, Kreativität) werden gemaxt.
 
-### **📊 Standard-Sets im Überblick**
+### 📊 Standard-Sets im Überblick
 
 | Set-ID | Name | Zielgruppe | Kernfunktionen |
 |--------|------|------------|----------------|
@@ -127,15 +147,35 @@ Standardmäßig gibt es z.B.:
 
 Eigene Sets anlegen: Kopiere einen vorhandenen Block in der `make_god_config.json`, vergib eine neue ID (z. B. `"5"` oder `"boss_npc"`) und trage sie in `auto_profiles` ein.
 
-### **Was sind "Auto Profile"?**
+### Was sind `Auto-Profile`?
 
-Die Mod ist schlau! Wenn du im Spiel auf "Option 1" klickst, bekommt nicht jeder Sim einfach stur "Set 0" aufgedrückt.  
-In der Config unter "auto_profiles" ist geregelt, wer welchen Bauplan bekommt.
+Die Mod ordnet die UI-Optionen automatisch passenden Sets zu. Ein Klick auf **Option 1** muss also nicht bei jedem Sim dasselbe Ergebnis liefern: Ein spielbarer Erwachsener kann z. B. **Set `0`** erhalten, während ein Kind automatisch **Set `10`** bekommt.  
+Die Zuordnung steuerst du in `make_god_config.json` unter `auto_profiles` – getrennt nach spielbaren Sims, NPCs, Geschlecht und Alter.
 
-* *Beispiel:* Du hast Option 1 geklickt. Die Mod sieht: "Aha, das ist ein spielbarer Erwachsener, er bekommt **Set 0**." - "Oh, das daneben ist ein Kind, es bekommt automatisch **Set 10**."  
-  Du kannst die Zuweisungen für NPCs, Männer, Frauen und Kinder hier völlig frei anpassen!
+### Das UI-Makro-System (Klick-Menü anpassen)
 
-### **So baust du eigene Sets (Wichtige Parameter):**
+Die Buttons im Ingame-Menü sind nicht fest an ein Profil gebunden. In `make_god_config.json` gibt es dafür den Bereich `macros`.  
+Dort definierst du für `ui_playable_01` bis `ui_playable_05` bzw. `ui_npc_01` bis `ui_npc_05`, welche Befehle beim Klick tatsächlich ausgeführt werden. Je nach UI-Pack erscheinen diese Aktionen im `MakeGod`-Untermenü.
+
+Nutze den Platzhalter `[sim_id]`, damit der hinterlegte Befehl exakt auf den angeklickten Sim angewendet wird.
+
+*Beispiel aus der Config:*
+```json
+"macros": {
+    "ui_playable_01": [
+        "rmg.id [sim_id] option_1"
+    ],
+    "ui_playable_02": [
+        "sims.give_satisfaction_points 10000 [sim_id]"
+    ],
+    "ui_npc_01": [
+        "rmg.id [sim_id] 1"
+    ]
+}
+```
+In diesem Beispiel würde ein Klick auf **Option 2** bei einem *gespielten Sim* ihm einfach 10.000 Zufriedenheitspunkte geben. Du kannst hier jeden beliebigen EA-Cheat oder MakeGod-Befehl eintragen. Das gibt dir die absolute Freiheit, dein eigenes Ingame-Cheat-Menü zusammenzubauen!
+
+### So baust du eigene Sets (wichtige Parameter)
 
 Die Datei enthält ein eingebautes Lexikon (_help_set_parameter). Hier ist kurz erklärt, wie die wichtigsten Parameter funktionieren:
 
@@ -144,13 +184,13 @@ Die Datei enthält ein eingebautes Lexikon (_help_set_parameter). Hier ist kurz 
 * **Magie & Okkult-Vorteile:** Du kannst Perks (Ruhm & Okkult-Fähigkeiten) über perks_all / perks_occult gezielt freischalten.  
 * **Beziehungen im Haushalt:** harmony_friendship, harmony_romance und target_relationship_status setzen Freundschaft, Romantik und Beziehungsstatus für Haushaltsmitglieder. Über remove_negative_relations, remove_negative_relations_household und remove_negative_relations_scope lassen sich außerdem Feindschaften, Groll und Angst-Bits gezielt im gesamten weltweiten Beziehungsnetz entfernen.
 
-### **Okkulte Sims (Vampire, Werwölfe, Magier)**
+### Okkulte Sims (Vampire, Werwölfe, Magier)
 
 MakeGod behandelt okkulte Sims völlig automatisch korrekt! In der Konfiguration (unter "motives_to_fill") weiß das Spiel genau, dass ein Vampir keine "Blase" hat, die eingefroren werden muss, sondern "Durst" und "Vampir-Energie".
 
-## **📖 Vollständige Konfigurations-Referenz**
+## 📖 Vollständige Konfigurations-Referenz
 
-Alle verfübaren Parameter auf einen Blick. Die `_help_set_parameter`-Sektion in der `make_god_config.json` enthält dieselben Beschreibungen direkt im Mod-Ordner.
+Alle verfügbaren Parameter auf einen Blick. Die `_help_set_parameter`-Sektion in der `make_god_config.json` enthält dieselben Beschreibungen direkt im Mod-Ordner.
 
 ### Globale Einstellungen
 
@@ -215,8 +255,8 @@ Die Config enthält zusätzlich den Abschnitt `"fallback_skills"`, der pro Alter
 
 | Schlüssel | Typ | Bedeutung |
 |-----------|-----|-----------|
-| `harmony_friendship` | Zahl | Freundschaftswert für alle Haushaltsmitglieder setzen. `0` = nicht anfassen. |
-| `harmony_romance` | Zahl | Romantikwert setzen (nur für Sims ab Teen-Alter). `0` = nicht anfassen. |
+| `harmony_friendship` | Zahl | Freundschaftswert für alle Haushaltsmitglieder setzen. `-999` = nicht anfassen. |
+| `harmony_romance` | Zahl | Romantikwert setzen (nur für Sims ab Teen-Alter). `-999` = nicht anfassen. |
 | `target_relationship_status` | String | Beziehungsstatus erzwingen. Erlaubt: `"friend"`, `"best_friend"`, `"woohoo_partner"`, `"significant_other"`, `"engaged"`, `"married"`. |
 | `remove_negative_relations` | Boolean | `true` = Scannt alle weltweiten Beziehungen. Sims, die ein Bit aus `remove_negative_relations_scope` tragen, werden von **allen** negativen Bits befreit. |
 | `remove_negative_relations_household` | Boolean | `true` = Haushaltsmitglieder werden **immer** bereinigt – unabhängig vom Scope. |
@@ -226,45 +266,45 @@ Die Config enthält zusätzlich den Abschnitt `"fallback_skills"`, der pro Alter
 **Beispiel:** `"remove_negative_relations": true` mit `"remove_negative_relations_scope": ["friend", "romantic", "married"]`  
 → Alle Freunde, Partner und Haushaltsmitglieder werden von Groll, Feindschaft und Angst befreit. Unbekannte Townies ohne Beziehung bleiben unberührt.
 
-## **🕵️‍♀️ Für Tech-Freaks & Modder: Das Dump-System**
+## 🕵️‍♀️ Für Tech-Freaks & Modder: Das Dump-System
 
 Du willst deinem Set Merkmale aus anderen Mods (wie *WickedWhims* oder *Basemental*) hinzufügen, kennst aber den internen Namen nicht? Die Mod bringt ein mächtiges Auslese-Werkzeug mit!
 
-### **1. Der Reference-Dump (Der Heilige Gral)**
+### 1. Der Reference-Dump (Der Heilige Gral)
 
 Öffne die Cheat-Konsole im Spiel und tippe:  
-rmg.dump reference  
+`rmg.dump reference`  
 Die Mod durchsucht in Sekundenschnelle die tiefste Code-Ebene der Spiel-Engine und exportiert dir eine saubere Markdown-Datei (.md) in deinen Mod-Ordner.  
 Diese Datei enthält eine **vollständige, alphabetische Liste aller Traits, Zauber, Tränke und Perks, die das Spiel gerade geladen hat (inklusive ALLER Mods!)**. Kopiere die Namen einfach heraus und füge sie in deine make_god_config.json ein. Du bist nie wieder auf Wiki-Seiten angewiesen!
 
-### **2. Der Sim- & Haushalts-Dump**
+### 2. Der Sim- & Haushalts-Dump
 
 Willst du wissen, welche internen System-Werte ein bestimmter Sim gerade hat?  
-Tippe rmg.dump all (für den ganzen Haushalt) oder rmg.dump active.  
+Tippe `rmg.dump all` (für den ganzen Haushalt) oder `rmg.dump active`.  
 Die Mod exportiert ein sauberes Dokument, das dir nicht nur Traits und Skills auflistet, sondern auch verborgene System-Werte (Commodities), okkulte Perks, freigeschaltete Zauber sowie Beziehungs-Werte und verborgene Beziehungs-Bits zu anderen Sims.  
 *(Tipp: Über den Punkt dump_blacklist_keywords in der Config filtert die Mod automatisch uninteressanten System-Junk aus diesen Reports heraus).*
 
-### **3. Dump eines bestimmten Sims per ID**
+### 3. Dump eines bestimmten Sims per ID
 
-Mit dem Befehl rmg.dump id <SimID> (z. B. rmg.dump id 12345678) kannst du gezielt einen einzelnen Sim exportieren – auch wenn er nicht in deinem aktiven Haushalt ist. Die SimID findest du entweder im Sim-Abschnitt eines vorherigen Dumps (Feld **ID**) oder über rmg.name "Vorname" in der Konsole (gibt bei mehreren Treffern alle IDs aus).
+Mit dem Befehl `rmg.dump id <SimID>` (z. B. `rmg.dump id 12345678`) kannst du gezielt einen einzelnen Sim exportieren – auch wenn er nicht in deinem aktiven Haushalt ist. Die SimID findest du entweder im Sim-Abschnitt eines vorherigen Dumps (Feld **ID**) oder über `rmg.name "Vorname"` in der Konsole (gibt bei mehreren Treffern alle IDs aus).
 
-## **❓ Häufige Fragen (FAQ)**
+## ❓ Häufige Fragen (FAQ)
 
 **Das "Make God" Menü taucht im Spiel nicht auf!**
 
 * Vergewissere dich, dass du beide Dateien (.ts4script und .package) in deinem Mods-Ordner hast.  
 * Prüfe, ob du "Script-Mods" in den Spieloptionen aktiviert hast.  
 * Versteckt sich die Option vielleicht unter "Aktionen" -> "Mehr Auswahl..."?  
-* Falls das Menü durch andere Mods blockiert wird, funktionieren die Text-Befehle (rmg.active) über die Konsole trotzdem immer zu 100%!
+* Falls das Menü durch andere Mods blockiert wird, funktionieren die Text-Befehle wie `rmg.active` über die Konsole in der Regel weiterhin.
 
 **Mein Batch-Skript / rmg.name setzt keine Flags bei Townies (z.B. MCCC/WickedWhims)!**
 
 * Drittanbieter-Mods registrieren Trait-Änderungen oft nur, wenn der Sim als "Instanced" (physisch auf dem Grundstück geladen) markiert ist. Befindet sich der Townie "schlafend" in seinem Haus, speichert EA zwar das Trait, aber Mods wie MCCC blockieren das Update in ihrer Datenbank.
 * **Die Lösung:** Aktiviere `"spawn_sim": true` in deiner `make_god_config.json` unter `"manual_add_settings"`. Rufst du den NPC in deinem Batch nun zuerst über `rmg.add` auf, teleportiert das Skript ihn sofort physisch zu deinem Sim. Anschließend funktioniert die Zuweisung über `rmg.name` fehlerfrei!
 
-**Wie vergebe ich Schluessel automatisch im Batch?**
-* Schluessel sind in der Sims-Engine zickig. Am stabilsten funktioniert es, wenn du den Trait `trait_HasKey` direkt in die `traits_all` oder `traits_sex_female` Liste deines Wunsch-Sets (z.B. Set 3) einträgst. 
-* Wenn du dann in deinem Skript `rmg.add id [sim_id]` (Teleport) gefolgt von `rmg.id [sim_id] 3` ausführst (via `rmg.bat setup_npc name "Yuki Behr"`), bekommt sie den Schluessel garantiert.
+**Wie vergebe ich Schlüssel automatisch im Batch?**
+* Schlüssel sind in der Sims-Engine zickig. Am stabilsten funktioniert es, wenn du den Trait `trait_HasKey` direkt in die `traits_all`- oder `traits_sex_female`-Liste deines Wunsch-Sets (z. B. Set 3) einträgst. 
+* Wenn du dann in deinem Skript `rmg.add id [sim_id]` (Teleport) gefolgt von `rmg.id [sim_id] 3` ausführst (z. B. via `rmg.bat setup_npc name "Yuki Behr"`), bekommt sie den Schlüssel zuverlässig.
 
 **Der Button "Haushalt" fehlt bei einigen Sims!**
 
@@ -328,6 +368,6 @@ Das Skript arbeitet im Hintergrund hochkomplexe Matrizen ab: Es scannt das gesam
 1. **Abwarten:** Lass das Spiel einfach rechnen. Wenn du das Ingame-Cheatfenster (Strg+Shift+C) geöffnet hast, kannst du live mitlesen, welchen Sim das Skript gerade bearbeitet.
 2. **Verzögerte Anzeige im Spiel:** Wenn das Skript fertig ist und das Spiel weiterläuft, **kann es einen kurzen Moment dauern, bis die neuen Beziehungswerte im UI (Beziehungs-Panel) sichtbar sind.** Die Engine aktualisiert die visuelle Anzeige der Freundschaften etwas verzögert im Hintergrund.
 
-**Tipp:** Wenn du die Beziehungs-Funktionen (wie `harmony_extended_network`) in deiner Konfiguration deaktivierst oder auf `-999` setzt, läuft das Skript deutlich schneller durch.
+**Tipp:** Wenn du aufwendige Beziehungs-Funktionen wie `harmony_extended_network` per `enabled: false` deaktivierst oder einzelne Freundschafts-/Romantikwerte gezielt auf `-999` setzt, läuft das Skript deutlich schneller durch.
 
 *Viel Spaß beim Erschaffen deiner perfekten Sims-Welt!*
