@@ -51,6 +51,7 @@ echo [+] Bereinige alte Dateien und Caches...
 del /Q "%MOD_DEST%\make_god.ts4script" 2>nul
 del /Q "%MOD_DEST%\make_god_debug.txt" 2>nul
 del /Q "%MOD_DEST%\rmg_dump_*.txt" 2>nul
+del /Q "%MOD_DEST%\rmg_dump_*.md" 2>nul
 del /Q "%GAME_DEST%\localsimtexturecache.package" 2>nul
 del /Q "%GAME_DEST%\localthumbcache.package" 2>nul
 del /Q "%GAME_DEST%\avatarcache.package" 2>nul
@@ -104,6 +105,8 @@ if exist "make_god.ts4script" del "make_god.ts4script"
 :: [5] Deployment (Restliche Dateien)
 echo [+] Kopiere Mod nach: %MOD_DEST%
 copy /Y "make_god.ts4script" "%MOD_DEST%\make_god.ts4script" >nul
+copy /Y "README.md" "%MOD_DEST%\README.md" >nul
+copy /Y "MakeGod Trait Referenz.md" "%MOD_DEST%\MakeGod Trait Referenz.md" >nul
 if exist "locales\" xcopy /E /I /Y "locales" "%MOD_DEST%\locales\" >nul
 if exist "Relnan_MakeGod_UI.package" copy /Y "Relnan_MakeGod_UI.package" "%MOD_DEST%\Relnan_MakeGod_UI.package" >nul
 

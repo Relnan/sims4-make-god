@@ -111,6 +111,10 @@ Nutze für Traits am besten die traits\_occult, für Perks die perks\_occult und
 * spell\_MindControl\_Romance \- Romantik-Zauber (Spell)  
 * recipe\_Potion\_Immortality \- Rezept für den Unsterblichkeitstrank (Spell/Recipe)
 
+### Wichtige Hinweise für Okkulte (Spells & Perks)
+* **Perks (Vampire, Werwölfe, Spellcaster):** Perks müssen als String in `perks_occult` eingetragen werden. Das Modul berücksichtigt Ränge (z.B. Level 1 vor Level 2) automatisch.
+* **Spells (Zauberbuch):** Spells müssen über `spells_occult` definiert werden. Verwenden Sie den exakten Namen des SNIPPETS oder RECIPES aus dem Reference-Dump (z. B. `Zero:recipe_PlayAsTheSage_Book_Mischief_1_Confuse` oder Vanilla-Snippets wie `spells_...`).
+
 ## **🎭 Persönlichkeits-Merkmale (Basisspiel)**
 
 **Positiv / Neutral:**

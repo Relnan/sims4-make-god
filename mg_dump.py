@@ -1,3 +1,4 @@
+# mg_dump.py
 import os
 import re
 from datetime import datetime
@@ -8,11 +9,9 @@ import mg_config
 import mg_utils
 import mg_logger
 
-
 def _sanitize_filename_part(value):
     cleaned = re.sub(r'[<>:"/\\|?*]+', '_', str(value or '').strip())
     return cleaned or 'unknown'
-
 
 def _get_dump_filepath(targets, prefix="rmg_dump"):
     """Generiert einen sicheren Dateinamen. Bei mehreren Zielen wird es ein Household-Dump."""
@@ -25,7 +24,8 @@ def _get_dump_filepath(targets, prefix="rmg_dump"):
         sim = targets[0]
         gender_str = _sanitize_filename_part(str(getattr(sim, 'gender', 'UNKNOWN')).split('.')[-1].lower())
         try:
-            occult_str = _sanitize_filename_part(mg_utils.get_occult_type(sim))
+            occult_types = mg_utils.get_occult_types(sim)
+            occult_str = _sanitize_filename_part("_".join(occult_types))
         except:
             occult_str = "unknown"
         first_name = _sanitize_filename_part(getattr(sim, 'first_name', 'Unbekannt'))
@@ -39,7 +39,6 @@ def _get_sim_data_md(sim_info):
     md_lines = []
     
     try:
-        # Lade Blacklist-Filter sicher
         raw_blacklist = mg_config.get("dump_blacklist_keywords", [])
         if not raw_blacklist: raw_blacklist = []
         dump_blacklist = [str(b).lower() for b in raw_blacklist]
@@ -53,7 +52,8 @@ def _get_sim_data_md(sim_info):
         try:
             age_str = str(getattr(sim_info, 'age', 'UNKNOWN')).split('.')[-1]
             gender_str = str(getattr(sim_info, 'gender', 'UNKNOWN')).split('.')[-1]
-            occult_str = mg_utils.get_occult_type(sim_info)
+            occult_types = mg_utils.get_occult_types(sim_info)
+            occult_str = ", ".join(occult_types)
             sim_id = getattr(sim_info, 'sim_id', 'UNKNOWN')
             md_lines.append(f"**ID:** `{sim_id}` | **Alter:** {age_str} | **Geschlecht:** {gender_str} | **Okkult:** {occult_str}")
         except Exception as header_e:
@@ -89,12 +89,10 @@ def _get_sim_data_md(sim_info):
             if perk_manager:
                 for perk_inst in perk_manager.types.values():
                     try:
-                        # Gezielte Abfrage über alle aktiven Perks
                         if bucks_tracker.is_perk_unlocked(perk_inst):
                             p_name = getattr(perk_inst, '__name__', str(perk_inst))
                             perks_list.append(f"- `[PERK]` {p_name}")
-                    except:
-                        pass
+                    except: pass
                         
             perks_list.sort()
             if perks_list: md_lines.extend(perks_list)
@@ -102,11 +100,10 @@ def _get_sim_data_md(sim_info):
         else:
             md_lines.append("- *Bucks-Tracker nicht verfügbar.*")
 
-        # --- SPELLS & UNLOCKS (DYNAMIC REFLECTION) ---
+        # --- SPELLS & UNLOCKS ---
         md_lines.append("\n## 🔮 Zaubersprüche & Unlocks")
         spell_list = []
         
-        # Alle potenziellen Tracker des Sims dynamisch sammeln
         potential_trackers = []
         for attr_name in dir(sim_info):
             if 'tracker' in attr_name.lower() or 'magic' in attr_name.lower():
@@ -117,14 +114,12 @@ def _get_sim_data_md(sim_info):
             try: potential_trackers.append(sim_info.get_unlock_tracker())
             except: pass
 
-        # 1. Prüfe Zaubersprüche (Snippets)
         if hasattr(sims4.resources.Types, 'SNIPPET'):
             snippet_manager = services.get_instance_manager(sims4.resources.Types.SNIPPET)
             if snippet_manager:
                 for inst in snippet_manager.types.values():
                     u_name = getattr(inst, '__name__', '')
                     if 'spell' in u_name.lower() or 'magic' in u_name.lower():
-                        # Frage JEDEN Tracker, ob er den Zauber kennt
                         for tracker in potential_trackers:
                             try:
                                 if (hasattr(tracker, 'is_unlocked') and tracker.is_unlocked(inst)) or \
@@ -134,14 +129,12 @@ def _get_sim_data_md(sim_info):
                                     break
                             except: pass
                             
-        # 2. Prüfe Tränke (Recipes)
         if hasattr(sims4.resources.Types, 'RECIPE'):
             recipe_manager = services.get_instance_manager(sims4.resources.Types.RECIPE)
             if recipe_manager:
                 for inst in recipe_manager.types.values():
                     u_name = getattr(inst, '__name__', '')
                     if 'potion' in u_name.lower() or 'recipe_magic' in u_name.lower():
-                        # Frage JEDEN Tracker
                         for tracker in potential_trackers:
                             try:
                                 if (hasattr(tracker, 'is_unlocked') and tracker.is_unlocked(inst)) or \
@@ -150,7 +143,6 @@ def _get_sim_data_md(sim_info):
                                     break
                             except: pass
                             
-        # Duplikate entfernen (falls mehrere Tracker positiv geantwortet haben)
         spell_list = list(set(spell_list))
         spell_list.sort()
         
@@ -242,7 +234,6 @@ def _get_sim_data_md(sim_info):
     md_lines.append("\n<br>\n")
     return "\n".join(md_lines)
 
-
 def execute_dump_to_file(targets, out):
     """Nimmt eine Liste von Sims, holt deren MD-Daten und schreibt sie in eine Datei."""
     if not targets: return
@@ -259,8 +250,11 @@ def execute_dump_to_file(targets, out):
             
             f.write(f"## 📋 Haushaltsübersicht ({len(targets)} Sims)\n")
             for sim in targets:
-                try: occ = mg_utils.get_occult_type(sim)
-                except: occ = "unknown"
+                try: 
+                    occ_list = mg_utils.get_occult_types(sim)
+                    occ = ", ".join(occ_list)
+                except: 
+                    occ = "unknown"
                 first_name = getattr(sim, 'first_name', 'Unbekannt')
                 last_name = getattr(sim, 'last_name', '')
                 sim_id = getattr(sim, 'sim_id', 'UNKNOWN')
@@ -275,7 +269,6 @@ def execute_dump_to_file(targets, out):
         out(f"Dump in Markdown-Format abgeschlossen. Siehe Mod-Ordner (.md Datei).")
     except Exception as e:
         mg_logger.log(f"[FEHLER] Dump fehlgeschlagen: {e}", is_debug=False, out=out)
-
 
 def execute_reference_dump(out):
     """Liest alle verfügbaren Traits, Perks und Zauber direkt aus der Engine aus."""
@@ -340,7 +333,6 @@ def execute_reference_dump(out):
         out(f"Reference Dump abgeschlossen! Master-Datei liegt im Mod-Ordner.")
     except Exception as e:
         mg_logger.log(f"[FEHLER] Reference-Dump fehlgeschlagen: {e}", is_debug=False, out=out)
-
 
 # --- COMMAND REGISTRIERUNG ---
 @sims4.commands.Command('rmg.dump', 'make_god_dump', command_type=sims4.commands.CommandType.Live)

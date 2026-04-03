@@ -1,3 +1,4 @@
+# mg_feat_stats.py
 import services
 import sims4.resources
 import sims4.commands
@@ -27,6 +28,9 @@ def apply_stats(sim_info, set_id, out, force_debug):
     allow_all_skills = active_set.get("allow_all_skills", False)
     
     do_max_skills = allow_all_skills or (active_set.get("max_player_skills", True) if is_player else active_set.get("max_npc_skills", False))
+    
+    # Okkult Typen abrufen (Array)
+    occult_types = mg_utils.get_occult_types(sim_info)
     
     # --- SKILL-ERLAUBNIS ODER FALLBACK LADEN ---
     allowed_skills = [s.lower() for s in active_set.get("allowed_skills", [])]
@@ -69,13 +73,15 @@ def apply_stats(sim_info, set_id, out, force_debug):
                         
     # --- OCCULT RÄNGE MAXIMIEREN ---
     if do_max_skills:
-        occult_ranks = [
-            ("rankedStatistic_WitchOccult_WitchXP", 2850),
-            ("rankedStatistic_Werewolf_Progression", 3000),
-            ("rankedStatistic_FairyOccult_FairyXP", 4658)
-        ]
-        for stat, val in occult_ranks:
-            _run_cheat(f"stats.set_stat {stat} {val}", sim_info)
+        for occ in occult_types:
+            if occ == 'spellcaster':
+                _run_cheat("stats.set_stat rankedStatistic_WitchOccult_WitchXP 2850", sim_info)
+            elif occ == 'werewolf':
+                _run_cheat("stats.set_stat rankedStatistic_Werewolf_Progression 3000", sim_info)
+            elif occ == 'fairy':
+                _run_cheat("stats.set_stat rankedStatistic_FairyOccult_FairyXP 4658", sim_info)
+            elif occ == 'vampire':
+                _run_cheat("stats.set_stat rankedStatistic_Occult_VampireXP 1598", sim_info)
                     
     # --- LUCK (GLÜCK) ÜBER CHEAT-SYSTEM ---
     if luck_data:
@@ -95,17 +101,25 @@ def apply_stats(sim_info, set_id, out, force_debug):
             # EA Command um ALLES auf einmal zu füllen
             _run_cheat("sims.fill_all_commodities", sim_info)
             
-        occult_type = mg_utils.get_occult_type(sim_info)
         motives_map = active_set.get("motives_to_fill", {})
-        targets = motives_map.get(occult_type, motives_map.get("human", []))
         
-        # Gezieltes füllen (wenn config gewählt) und ggf. einfrieren
-        if targets:
-            for m in targets:
+        # Sammle alle relevanten Motive für die Okkult-Typen des Sims
+        targets_set = set()
+        for occ in occult_types:
+            for m in motives_map.get(occ, []):
+                targets_set.add(m)
+                
+        # Fallback, falls die Liste leer bleibt (z.B. bei 'human')
+        if not targets_set:
+            for m in motives_map.get("human", []):
+                targets_set.add(m)
+        
+        if targets_set:
+            for m in targets_set:
                 if fill_mode == "config":
                     _run_cheat(f"fillmotive {m}", sim_info)
                 
-                # Der native Python "Freeze" Lock (hilft besonders bei Okkulten)
+                # Der native Python "Freeze" Lock
                 if freeze_motives and skill_manager:
                     for stat_type in tuple(skill_manager.types.values()):
                         stat_name = getattr(stat_type, '__name__', '').lower()
@@ -114,32 +128,27 @@ def apply_stats(sim_info, set_id, out, force_debug):
                             if tracker:
                                 stat_inst = tracker.get_statistic(stat_type)
                                 if stat_inst:
-                                    # Verhindert, dass wir aus Versehen Flüche/Wut einfrieren (diese müssen entleert werden)
                                     if "charge" in stat_name or "fury" in stat_name:
                                         tracker.set_value(stat_type, stat_inst.min_value)
                                     try: stat_inst.add_decay_rate_modifier(0.0)
                                     except: pass
 
-                        
     # --- KARRIERE & SCHULE ---
     do_master_careers = active_set.get("master_player_careers", True) if is_player else active_set.get("master_npc_careers", False)
     if do_master_careers:
         if mg_utils.is_minor(sim_info):
-            # Schule für Kinder und Teenager
             age_name = str(sim_info.age).split('.')[-1].upper()
             if age_name == 'CHILD':
                 for _ in range(4): _run_cheat("careers.promote gradeschool", sim_info)
             elif age_name == 'TEEN':
                 for _ in range(4): _run_cheat("careers.promote highschool", sim_info)
         else:
-            # Normale Karrieren für Erwachsene
             if hasattr(sim_info, 'career_tracker') and sim_info.career_tracker:
                 for career in tuple(sim_info.career_tracker.careers.values()):
                     for _ in range(15):
                         try: career.promote()
                         except: pass
                         
-        # Meilensteine abschließen
         for _ in range(5): 
             _run_cheat("aspirations.complete_current_milestone", sim_info)
 

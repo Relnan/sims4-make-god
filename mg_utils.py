@@ -1,6 +1,6 @@
+# mg_utils.py
 import services
 from sims.sim_info_types import Gender
-import sims4.resources
 import mg_config
 
 def get_sim_by_id(sim_id):
@@ -9,85 +9,79 @@ def get_sim_by_id(sim_id):
     return sim_info_manager.get(sim_id) if sim_info_manager else None
 
 def get_sims_by_name(name_string, active_household=None):
-    """Einfache Namenssuche (Fallback)."""
-    return get_sims_by_fuzzy_name(name_string, active_household)
-
-def get_sims_by_fuzzy_name(name_string, active_household=None):
-    """Sucht nach einem Sim ueber Teilstrings und entfernt Anfuehrungszeichen."""
+    """Sucht nach einem Sim ueber den Namen."""
     sim_info_manager = services.sim_info_manager()
     if not sim_info_manager: return []
     
-    search_terms = str(name_string).lower().replace('"', '').split()
-    if not search_terms: return []
+    search_name = str(name_string).lower().strip()
+    
+    def match_name(sim):
+        fname = getattr(sim, 'first_name', '').lower()
+        lname = getattr(sim, 'last_name', '').lower()
+        full_name = f"{fname} {lname}".strip()
+        return search_name == fname or search_name == lname or search_name == full_name
+
+    all_matches = []
+    for sim in sim_info_manager.values():
+        if match_name(sim):
+            all_matches.append(sim)
+
+    return all_matches
+
+def get_sims_by_fuzzy_name(name_string, active_household=None):
+    """Sucht nach einem Sim ueber den Namen (Teil-Uebereinstimmung)."""
+    sim_info_manager = services.sim_info_manager()
+    if not sim_info_manager: return []
+    
+    search_name = str(name_string).lower().strip()
     
     all_matches = []
-    search_full = " ".join(search_terms)
-
     for sim in sim_info_manager.values():
         fname = getattr(sim, 'first_name', '').lower()
         lname = getattr(sim, 'last_name', '').lower()
         full_name = f"{fname} {lname}".strip()
         
-        # 1. Exakter Treffer erzwingt sofortige Rueckgabe
-        if full_name == search_full:
-            return [sim]
-            
-        # 2. Fuzzy Suche (Teilstrings)
-        hit = False
-        for term in search_terms:
-            if term == fname or term == lname:
-                hit = True
-                break
-        if hit:
+        if search_name in fname or search_name in lname or search_name in full_name:
             all_matches.append(sim)
 
     return all_matches
 
-def is_apartment_or_penthouse():
-    """Prueft, ob das aktuelle Lot ein Apartment oder Penthouse ist."""
-    try:
-        plex_service = services.get_plex_service()
-        if plex_service and plex_service.is_active_zone_a_plex():
-            return True
-    except: pass
+def get_occult_types(sim_info):
+    """
+    Ermittelt ALLE Okkult-Typen strikt und gibt eine Liste zurueck.
+    witch wird zu spellcaster gemappt.
+    """
+    found_types = set()
     
-    try:
-        venue_manager = services.get_instance_manager(sims4.resources.Types.VENUE)
-        venue_service = services.venue_service()
-        if venue_service and venue_manager:
-            active_venue = venue_service.source_venue_type
-            v_name = getattr(active_venue, '__name__', '').lower()
-            if 'penthouse' in v_name or 'apartment' in v_name:
-                return True
-    except: pass
-    
-    return False
-
-def get_occult_type(sim_info):
+    # 1. Check über den Occult Tracker (zuverlässig)
     try:
         if hasattr(sim_info, 'occult_tracker') and sim_info.occult_tracker:
             if sim_info.occult_tracker.has_any_occult_or_part_occult_trait():
-                ot = sim_info.occult_tracker.occult_types
-                if ot:
-                    type_str = str(list(ot)[0]).split('.')[-1].lower()
-                    if type_str and type_str not in ['none', 'human']: 
-                        return type_str
+                if hasattr(sim_info.occult_tracker, 'occult_types'):
+                    for ot in sim_info.occult_tracker.occult_types:
+                        type_str = str(ot).split('.')[-1].lower()
+                        if type_str == 'witch':
+                            found_types.add('spellcaster')
+                        elif type_str and type_str not in ['none', 'human']:
+                            found_types.add(type_str)
     except: pass
 
+    # 2. Fallback über Traits (exaktes Matching)
     if hasattr(sim_info, 'trait_tracker') and sim_info.trait_tracker:
         for trait in sim_info.trait_tracker.equipped_traits:
             t_name = getattr(trait, '__name__', '').lower()
-            if t_name == 'trait_occultvampire': return 'vampire'
-            if t_name == 'trait_occult_witchoccult': return 'spellcaster'
-            if t_name == 'trait_occultwerewolf': return 'werewolf'
-            if t_name == 'trait_occultmermaid': return 'mermaid'
-            if t_name == 'trait_occultalien': return 'alien'
-            if t_name == 'trait_occult_fairy' or t_name == 'trait_occultfairy' or 'fairy_occult' in t_name: 
-                return 'fairy'
+            if t_name == 'trait_occultvampire': found_types.add('vampire')
+            elif t_name == 'trait_occult_witchoccult': found_types.add('spellcaster')
+            elif t_name == 'trait_occultwerewolf': found_types.add('werewolf')
+            elif t_name == 'trait_occultmermaid': found_types.add('mermaid')
+            elif t_name == 'trait_occultalien': found_types.add('alien')
+            elif t_name == 'trait_occult_fairy': found_types.add('fairy')
+            elif t_name == 'trait_isghost': found_types.add('ghost')
             
-    return "human"
+    return list(found_types) if found_types else ["human"]
 
 def is_minor(sim_info):
+    """Prueft, ob der Sim ein Kind oder juenger ist."""
     try:
         if hasattr(sim_info, 'is_teen_or_older'):
             return not sim_info.is_teen_or_older
@@ -96,6 +90,7 @@ def is_minor(sim_info):
         return False
 
 def get_auto_set(sim_info, active_household, option_key="option_1"):
+    """Ermittelt das passende Config-Set basierend auf Alter, Geschlecht und Haushalt."""
     profiles = mg_config.get("auto_profiles", {}).get(option_key, {})
     if not profiles:
         profiles = mg_config.get("auto_profiles", {}).get("option_1", {})

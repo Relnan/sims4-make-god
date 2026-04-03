@@ -1,3 +1,4 @@
+# mg_main.py
 import sims4.commands
 import services
 import re
@@ -6,9 +7,7 @@ import mg_config
 import mg_logger
 import mg_utils
 import mg_queue
-import mg_dump
 
-# Erlaubt benutzerfreundliche Eingaben wie option1/option_1/opt1
 def _normalize_selector(value):
     raw = str(value).lower().strip()
     m = re.match(r'^(?:option_?|opt)(\d+)$', raw)
@@ -16,9 +15,7 @@ def _normalize_selector(value):
         return f"option_{m.group(1)}"
     return raw
 
-# --- ZENTRALER ARGUMENT-PARSER ---
 def _parse_args_and_debug(args):
-    """Filtert das Schlüsselwort 'debug' ausschliesslich am Ende der Eingabe heraus."""
     args_list = [str(a).lower().strip() for a in args]
     force_debug = False
     
@@ -28,10 +25,8 @@ def _parse_args_and_debug(args):
         
     return args_list, force_debug
 
-# Initiales Laden beim Import
 mg_config.load_config()
 
-# --- HAUPT-ROUTING (Akzeptiert nun 'rmg' und 'make_god' als Befehl) ---
 @sims4.commands.Command('rmg', 'make_god', command_type=sims4.commands.CommandType.Live)
 def cmd_rmg_base(*args, _connection=None):
     out = sims4.commands.CheatOutput(_connection)
@@ -39,26 +34,24 @@ def cmd_rmg_base(*args, _connection=None):
     except: pass
     
     args_list, force_debug = _parse_args_and_debug(args)
-    
     mg_config.load_config()
     client = services.client_manager().get(_connection)
     if not client: return
     
-    # --- BEFEHLSREFERENZ / HILFEMENÜ ---
     if not args_list:
         out("=== Relnans Make God (RMG) - Befehlsreferenz ===")
-        out("Nutzung: rmg [Modus] [Set_ID|auto|option_X] [debug]")
+        out("Nutzung: rmg [Modus] [Set_ID|auto] [override_occult] [debug]")
         out(" ")
         out("Verfuegbare Shortcuts:")
-        out("- rmg.all [Set_ID|auto]   -> Auf den ganzen Haushalt.")
-        out("- rmg.active [Set_ID|auto]-> Nur auf den aktiven Sim.")
-        out("- rmg.add id <ID>         -> Verbindet Sim via ID mit aktivem Sim.")
-        out("- rmg.add name <Name>     -> Verbindet Sim via Name mit aktivem Sim.")
-        out("- rmg.id <ID> [Set_ID]    -> Auf Sim mit der ID.")
-        out("- rmg.name <Name> [Set_ID]-> Auf gefundenen Sim (z.B. rmg.name yuki behr 2).")
-        out("- rmg.bat <BatchName>     -> Fuehrt Liste aus config.json aus.")
-        out("- rmg.dump                -> Erstellt einen Textdatei-Dump (aktiver Sim).")
-        out("- rmg.dump all            -> Erstellt einen Dump fuer den ganzen Haushalt.")
+        out("- rmg.all [Set_ID|auto] [override]     -> Auf den ganzen Haushalt.")
+        out("- rmg.active [Set_ID|auto] [override]  -> Nur auf den aktiven Sim.")
+        out("- rmg.add id <ID>                      -> Verbindet Sim via ID mit aktivem Sim.")
+        out("- rmg.add name <Name>                  -> Verbindet Sim via Name mit aktivem Sim.")
+        out("- rmg.id <ID> [Set_ID] [override]      -> Auf Sim mit der ID.")
+        out("- rmg.name <Name> [Set_ID] [override]  -> Auf gefundenen Sim.")
+        out("- rmg.bat <BatchName> [Target]         -> Fuehrt Liste aus config.json aus.")
+        out("- rmg.dump                             -> Erstellt einen Textdatei-Dump (aktiver Sim).")
+        out("- rmg.dump all                         -> Erstellt einen Dump fuer den ganzen Haushalt.")
         out("==================================================")
         return
         
@@ -80,9 +73,19 @@ def cmd_rmg_base(*args, _connection=None):
     targets_with_reason = []
     set_id = 'auto'
     mode = 'all'
+    override_occult = None
 
     if args_list:
         mode = args_list[0]
+        
+    def _extract_set_and_override(args_sublist):
+        s_id = 'auto'
+        o_occ = None
+        if len(args_sublist) > 0:
+            s_id = _normalize_selector(args_sublist[0])
+        if len(args_sublist) > 1:
+            o_occ = args_sublist[1]
+        return s_id, o_occ
         
     if mode == 'all':
         for sim in active_household:
@@ -115,11 +118,13 @@ def cmd_rmg_base(*args, _connection=None):
                             if target_sim:
                                 targets_with_reason.append((target_sim, reason))
                                 
-        if len(args_list) > 1: set_id = _normalize_selector(args_list[1])
+        if len(args_list) > 1:
+            set_id, override_occult = _extract_set_and_override(args_list[1:])
         
     elif mode == 'active':
         if active_sim_info: targets_with_reason.append((active_sim_info, "Aktiver Sim"))
-        if len(args_list) > 1: set_id = _normalize_selector(args_list[1])
+        if len(args_list) > 1:
+            set_id, override_occult = _extract_set_and_override(args_list[1:])
         
     elif mode == 'id':
         if len(args_list) > 1:
@@ -127,18 +132,24 @@ def cmd_rmg_base(*args, _connection=None):
                 found_sim = mg_utils.get_sim_by_id(int(args_list[1]))
                 if found_sim: targets_with_reason.append((found_sim, "Manuelle ID"))
             except: pass
-        if len(args_list) > 2: set_id = _normalize_selector(args_list[2])
+        if len(args_list) > 2:
+            set_id, override_occult = _extract_set_and_override(args_list[2:])
         
     elif mode == 'name':
         if len(args_list) > 1:
-            # Puerft, ob das letzte Wort ein Set (z.B. "2" oder "option_2") ist
-            potential_set = args_list[-1]
-            if re.match(r'^(?:option_?|opt)?(\d+)$', potential_set) or potential_set == 'auto':
-                set_id = _normalize_selector(potential_set)
-                search_str = " ".join(args_list[1:-1]) # Alles dazwischen ist der Name
-            else:
-                search_str = " ".join(args_list[1:]) # Kein Set angegeben, der Rest ist Name
+            name_args = list(args_list[1:])
+            known_occults = ['vampire', 'spellcaster', 'werewolf', 'mermaid', 'alien', 'fairy', 'ghost', 'human']
             
+            if name_args and name_args[-1] in known_occults:
+                override_occult = name_args.pop()
+                
+            if name_args:
+                potential_set = name_args[-1]
+                if re.match(r'^(?:option_?|opt)?(\d+)$', potential_set) or potential_set == 'auto':
+                    set_id = _normalize_selector(potential_set)
+                    name_args.pop()
+            
+            search_str = " ".join(name_args)
             if not search_str:
                 out("[FEHLER] Kein Name angegeben.")
                 return
@@ -164,9 +175,8 @@ def cmd_rmg_base(*args, _connection=None):
     else:
         for sim in active_household:
             targets_with_reason.append((sim, "Household"))
-        set_id = _normalize_selector(args_list[0])
+        set_id, override_occult = _extract_set_and_override(args_list)
 
-    # --- ZUSAMMENFASSEN UND AUSGEBEN ---
     targets = []
     if targets_with_reason:
         if force_debug: out("--- Liste der erfassten Sims ---")
@@ -181,30 +191,35 @@ def cmd_rmg_base(*args, _connection=None):
         out("[FEHLER] Keine passenden Sims gefunden.")
         return
 
-# --- NEU: Alle Ziel-Sims mit dem aktiven Sim bekannt machen ---
     if active_sim_info:
         for target_sim in targets:
             if target_sim.sim_id != active_sim_info.sim_id:
                 sims4.commands.execute(f"relationship.add_bit {active_sim_info.sim_id} {target_sim.sim_id} 15803", None)
 
     out(f"Sende {len(targets)} Sim(s) an die Queue fuer Set '{set_id}'...")
-    mg_queue.start_queue(targets, set_id, active_household, out, force_debug, _connection)
+    mg_queue.start_queue(targets, set_id, active_household, out, force_debug, override_occult, _connection)
 
 
-# --- BATCH SYSTEM (rmg.bat) ---
+# --- BATCH SYSTEM (ERWEITERT MIT ARRAY/LISTEN TARGETING) ---
 @sims4.commands.Command('rmg.bat', command_type=sims4.commands.CommandType.Live)
-def cmd_rmg_bat(batch_name=None, *args, _connection=None):
+def cmd_rmg_bat(*args, _connection=None):
     out = sims4.commands.CheatOutput(_connection)
     try: sims4.commands.cheats_enabled = True
     except: pass
     
-    if not batch_name:
-        out("Nutzung: rmg.bat <BatchName> [Arg1] [Arg2] ...")
+    if not args:
+        out("Nutzung: rmg.bat <BatchName> [id \"<ID1, ID2>\" | name \"<Name1, Name2>\" | active] [Arg0] [Arg1] ...")
         return
         
+    args_list, force_debug = _parse_args_and_debug(args)
+    original_args = list(args)
+    if force_debug and original_args[-1].lower().strip() == 'debug':
+        original_args.pop()
+
+    batch_name_str = args_list[0].lower()
+    
     mg_config.load_config()
     batches = mg_config.get("batches", {})
-    batch_name_str = str(batch_name).lower()
     
     actual_batch = None
     for k, v in batches.items():
@@ -213,38 +228,113 @@ def cmd_rmg_bat(batch_name=None, *args, _connection=None):
             break
             
     if not actual_batch:
-        out(f"[FEHLER] Batch '{batch_name}' nicht in der make_god_config gefunden.")
+        out(f"[FEHLER] Batch '{batch_name_str}' nicht gefunden.")
         return
         
-    out(f"=== Starte Batch: {batch_name} ({len(actual_batch)} Befehle) ===")
-    for cmd in actual_batch:
-        cmd_str = str(cmd).strip()
-        if not cmd_str: continue
+    client = services.client_manager().get(_connection)
+    active_sim_info = client.active_sim.sim_info if (client and client.active_sim) else None
+    
+    # 1. Ziel-Sim Array Evaluierung (Targeting)
+    target_sims = []
+    used_targeting_args = 0
+    batch_args_lower = args_list[1:]
+    
+    if len(batch_args_lower) >= 1:
+        mode = batch_args_lower[0]
+        if mode == 'id' and len(batch_args_lower) >= 2:
+            id_strings = str(original_args[2]).split(',')
+            for id_str in id_strings:
+                clean_id = id_str.strip()
+                if not clean_id: continue
+                try:
+                    sim_id = int(clean_id)
+                    found_sim = mg_utils.get_sim_by_id(sim_id)
+                    if found_sim:
+                        target_sims.append(found_sim)
+                    else:
+                        out(f"[FEHLER] Sim mit ID {sim_id} nicht gefunden. Uebersprungen.")
+                except:
+                    out(f"[FEHLER] Ungueltige ID uebergeben: '{clean_id}'")
+            used_targeting_args = 2
+            
+        elif mode == 'name' and len(batch_args_lower) >= 2:
+            name_strings = str(original_args[2]).split(',')
+            for name_str in name_strings:
+                search_str = name_str.strip()
+                if not search_str: continue
+                
+                matches = mg_utils.get_sims_by_fuzzy_name(search_str)
+                if not matches:
+                    out(f"[FEHLER] Kein Sim gefunden fuer '{search_str}'. Uebersprungen.")
+                elif len(matches) > 1:
+                    out(f"[INFO] Mehrere moegliche Sims gefunden fuer '{search_str}'. Nutze exakte ID!")
+                    for i, sim in enumerate(matches[:10], start=1):
+                        s_id = getattr(sim, 'sim_id', 'unbekannt')
+                        first = getattr(sim, 'first_name', '')
+                        last = getattr(sim, 'last_name', '')
+                        out(f"   {i}. {first} {last} | ID: {s_id}")
+                else:
+                    target_sims.append(matches[0])
+            used_targeting_args = 2
+            
+        elif mode == 'active':
+            if active_sim_info: target_sims.append(active_sim_info)
+            used_targeting_args = 1
+
+    # Fallback, falls jemand einfach 'rmg.bat deb' eintippt
+    if not target_sims and (not batch_args_lower or batch_args_lower[0] not in ['id', 'name', 'active']):
+        if active_sim_info:
+            target_sims.append(active_sim_info)
+
+    if not target_sims:
+        out("[FEHLER] Keine gueltigen Ziel-Sims fuer diesen Batch gefunden.")
+        return
+
+    # 2. Verbleibende Argumente fuer Platzhalter {0}, {1} isolieren
+    remaining_args = original_args[1 + used_targeting_args:]
         
-        # Rekursions-Schutz
-        if cmd_str.lower().startswith('rmg.bat') or cmd_str.lower().startswith('make_god.bat'):
-            out(f" -> [Uebersprungen] Rekursions-Schutz: Verschachtelte Batches ({cmd_str}) sind nicht erlaubt.")
-            continue
+    out(f"=== Starte Batch: {batch_name_str} fuer {len(target_sims)} Sim(s) ===")
+    
+    # 3. Schleife fuer jeden gefundenen Sim
+    for target_sim in target_sims:
+        sim_id_str = str(target_sim.sim_id)
+        sim_first = getattr(target_sim, 'first_name', '')
+        sim_last = getattr(target_sim, 'last_name', '')
+        sim_full = f"{sim_first} {sim_last}".strip()
+        
+        out(f" -> Verarbeite: {sim_full}")
+        
+        for cmd in actual_batch:
+            cmd_str = str(cmd).strip()
+            if not cmd_str: continue
             
-        # Platzhalter {0}, {1} etc. durch die eingegebenen Argumente ersetzen
-        for i, arg in enumerate(args):
-            cmd_str = cmd_str.replace(f"{{{i}}}", str(arg))
-            
-        # Pruefen, ob noch unaufgeloeste Platzhalter (z.B. {1}) im String existieren
-        if re.search(r'\{\d+\}', cmd_str):
-            out(f" -> [FEHLER] Uebersprungen: Nicht genuegend Argumente uebergeben fuer '{cmd_str}'.")
-            continue
-            
-        out(f" -> Ausfuehrung: [{cmd_str}]")
-        try:
-            sims4.commands.execute(cmd_str, _connection)
-        except Exception as e:
-            out(f"    [FEHLER] {e}")
-            
-    out(f"=== Batch '{batch_name}' abgeschlossen ===")
+            if cmd_str.lower().startswith('rmg.bat') or cmd_str.lower().startswith('make_god.bat'):
+                out(f"    [Uebersprungen] Rekursions-Schutz aktiv.")
+                continue
+                
+            # A. Positionale Platzhalter {0}, {1} ersetzen
+            for i, arg in enumerate(remaining_args):
+                cmd_str = cmd_str.replace(f"{{{i}}}", str(arg))
+                
+            if re.search(r'\{\d+\}', cmd_str):
+                out(f"    [FEHLER] Nicht genuegend Argumente uebergeben fuer '{cmd_str}'.")
+                continue
+                
+            # B. Kontext-Platzhalter ersetzen
+            cmd_str = cmd_str.replace("[sim_id]", sim_id_str)
+            cmd_str = cmd_str.replace("[sim_first]", sim_first)
+            cmd_str = cmd_str.replace("[sim_last]", sim_last)
+            cmd_str = cmd_str.replace("[sim_name]", f'"{sim_full}"')
+                
+            out(f"    Ausfuehrung: [{cmd_str}]")
+            try:
+                sims4.commands.execute(cmd_str, _connection)
+            except Exception as e:
+                out(f"       [FEHLER] {e}")
+                
+    out(f"=== Batch '{batch_name_str}' abgeschlossen ===")
 
 
-# --- MANUELLE VERKNÜPFUNG (rmg.add) ---
 @sims4.commands.Command('rmg.add', command_type=sims4.commands.CommandType.Live)
 def cmd_rmg_add(*args, _connection=None):
     out = sims4.commands.CheatOutput(_connection)
@@ -314,13 +404,9 @@ def cmd_rmg_add(*args, _connection=None):
     
     try:
         mg_feat_relations.apply_manual_relation(active_sim_info, target_sim, settings, out, force_debug)
-    except AttributeError:
-        out("[CRITICAL] Das Skript 'mg_feat_relations' enthaelt nicht die benoetigte Funktion. Bitte stelle sicher, dass die Datei aktualisiert und neu kompiliert wurde.")
     except Exception as e:
         out(f"[FEHLER] apply_manual_relation: {e}")
 
-
-# --- DIREKTE SHORTCUTS (rmg.all, rmg.active etc.) ---
 @sims4.commands.Command('rmg.all', command_type=sims4.commands.CommandType.Live)
 def cmd_rmg_all(*args, _connection=None):
     cmd_rmg_base('all', *args, _connection=_connection)
@@ -338,7 +424,6 @@ def cmd_rmg_name(*args, _connection=None):
     cmd_rmg_base('name', *args, _connection=_connection)
 
 
-# --- DIE UI-BRIDGE (PICKER-MENU) ---
 @sims4.commands.Command('make_god_ui_trigger', 'rmg.ui_trigger', command_type=sims4.commands.CommandType.Live)
 def cmd_rmg_ui_trigger(sim_id=None, option_key='option_1', _connection=None):
     out = sims4.commands.CheatOutput(_connection)
@@ -388,18 +473,16 @@ def cmd_rmg_ui_trigger(sim_id=None, option_key='option_1', _connection=None):
 
         targets = [t[0] for t in targets_with_reason]
         
-        # --- NEU: Bekannt machen ---
         active_sim_info_ui = client.active_sim.sim_info if client and client.active_sim else None
         if active_sim_info_ui:
             for t_sim in targets:
                 if t_sim.sim_id != active_sim_info_ui.sim_id:
                     sims4.commands.execute(f"relationship.add_bit {active_sim_info_ui.sim_id} {t_sim.sim_id} 15803", None)
 
-        mg_queue.start_queue(targets, 'auto', active_household, out, False, _connection)
+        mg_queue.start_queue(targets, 'auto', active_household, out, False, None, _connection)
     else:
-        # --- NEU: Bekannt machen ---
         active_sim_info_ui = client.active_sim.sim_info if client and client.active_sim else None
         if active_sim_info_ui and target_sim.sim_id != active_sim_info_ui.sim_id:
              sims4.commands.execute(f"relationship.add_bit {active_sim_info_ui.sim_id} {target_sim.sim_id} 15803", None)
              
-        mg_queue.start_queue([target_sim], option_key, active_household, out, False, _connection)
+        mg_queue.start_queue([target_sim], option_key, active_household, out, False, None, _connection)
