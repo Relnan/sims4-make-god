@@ -1,3 +1,4 @@
+# mg_feat_relations.py
 import sims4.commands
 import mg_config
 import mg_logger
@@ -16,7 +17,7 @@ def apply_relations(sim_info, set_id, out, force_debug, group_targets=None):
         tracker = getattr(sim_info, 'relationship_tracker', None)
         if not tracker: return
 
-        # Nutze den injizierten Pool (Haushalt + Mitbewohner + Schlüssel) falls vorhanden
+        # Nutze den injizierten Pool (Haushalt + Mitbewohner + Schlüssel) als Hubs
         targets = group_targets if group_targets else (list(sim_info.household) if getattr(sim_info, 'household', None) else [sim_info])
         
         skill_manager = services.get_instance_manager(sims4.resources.Types.STATISTIC)
@@ -46,7 +47,7 @@ def apply_relations(sim_info, set_id, out, force_debug, group_targets=None):
         checked_count = 0
         modified_count = 0
 
-        # --- 1. & 2. SINGLE-PASS SCHLEIFE FÜR ALLE EXTERNEN BEZIEHUNGEN ---
+        # --- 1. NEGATIVE BEREINIGUNG (Source's eigene Beziehungen) ---
         for target_id in tuple(tracker.target_sim_gen()):
             if target_id == sim_info.sim_id: continue
             
@@ -55,7 +56,6 @@ def apply_relations(sim_info, set_id, out, force_debug, group_targets=None):
             target_sim_info = None  
             current_bits = tuple(tracker.get_all_bits(target_id))
             
-            # --- TEIL A: NEGATIVE BEREINIGUNG ---
             if remove_negatives_scope or remove_negatives_household:
                 is_in_neg_scope = False
                 
@@ -68,7 +68,8 @@ def apply_relations(sim_info, set_id, out, force_debug, group_targets=None):
                     for bit in current_bits:
                         b_name = getattr(bit, '__name__', '').lower()
                         if any(kw in b_name for kw in scope_keywords) or 'fear' in b_name or 'jealous' in b_name:
-                            is_in_neg_scope = True; break
+                            is_in_neg_scope = True
+                            break
                 
                 if is_in_neg_scope:
                     for bit in current_bits:
@@ -99,58 +100,84 @@ def apply_relations(sim_info, set_id, out, force_debug, group_targets=None):
                                     target_modified = True
                                 except: pass
 
-            # --- TEIL B: ERWEITERTES SOZIALES NETZWERK (MATRIX) ---
-            if ext_enabled:
-                in_ext_scope = False
-                for bit in current_bits:
-                    b_name = getattr(bit, '__name__', '').lower()
-                    if any(kw in b_name for kw in ext_scope_keywords):
-                        in_ext_scope = True; break
-                
-                if in_ext_scope:
-                    if not target_sim_info: target_sim_info = mg_utils.get_sim_by_id(target_id)
-                    
-                    if target_sim_info:
-                        is_target_female = getattr(target_sim_info, 'is_female', False)
-                        target_key = "target_female" if is_target_female else "target_male"
-                        matrix_values = source_config.get(target_key, {})
-                        
-                        target_age_norm = str(getattr(target_sim_info, 'age', '')).split('.')[-1].lower().replace('_', '')
-                        t_friendship = None
-                        t_romance = None
-                        
-                        for k, v in matrix_values.items():
-                            if type(v) is dict and k.lower().replace('_', '') == target_age_norm:
-                                t_friendship = v.get("friendship", -999)
-                                t_romance = v.get("romance", -999)
-                                break
-                        else:
-                            t_friendship = matrix_values.get("friendship", -999)
-                            t_romance = matrix_values.get("romance", -999)
-                        
-                        if t_friendship == -999: t_friendship = None
-                        if t_romance == -999: t_romance = None
-                        
-                        if t_friendship is not None and f_track:
-                            curr_f = tracker.get_relationship_score(target_id, f_track)
-                            if curr_f < t_friendship:
-                                try: 
-                                    tracker.set_relationship_score(target_id, t_friendship, f_track)
-                                    target_modified = True
-                                except: pass
-                                
-                        if t_romance is not None and r_track:
-                            if getattr(sim_info, 'age', 0) >= 8 and getattr(target_sim_info, 'age', 0) >= 8:
-                                curr_r = tracker.get_relationship_score(target_id, r_track)
-                                if curr_r < t_romance:
-                                    try: 
-                                        tracker.set_relationship_score(target_id, t_romance, r_track)
-                                        target_modified = True
-                                    except: pass
-            
             if target_modified: modified_count += 1
 
-        # --- 3. POSITIVE HAUSHALTSBEZIEHUNGEN FORCIEREN ---
+        # --- 2. ERWEITERTES SOZIALES NETZWERK (Hub-and-Spoke Matrix) ---
+        if ext_enabled:
+            # Set für Performance: Wir ignorieren Sims, die wir bereits verarbeitet haben oder die zum Hub gehören
+            processed_target_ids = set()
+            processed_target_ids.add(sim_info.sim_id)
+            for hub_sim in targets:
+                processed_target_ids.add(hub_sim.sim_id)
+
+            for hub_sim in targets:
+                if hub_sim.sim_id == sim_info.sim_id: continue
+                
+                hub_tracker = getattr(hub_sim, 'relationship_tracker', None)
+                if not hub_tracker: continue
+                
+                for ext_target_id in tuple(hub_tracker.target_sim_gen()):
+                    if ext_target_id in processed_target_ids: continue
+                    
+                    checked_count += 1
+                    target_modified = False
+                    
+                    # Prüfen, ob der Hub zu diesem Target eine Beziehung hat, die in unserem Scope liegt
+                    in_ext_scope = False
+                    hub_bits = tuple(hub_tracker.get_all_bits(ext_target_id))
+                    for bit in hub_bits:
+                        b_name = getattr(bit, '__name__', '').lower()
+                        if any(kw in b_name for kw in ext_scope_keywords):
+                            in_ext_scope = True
+                            break
+                    
+                    if in_ext_scope:
+                        target_sim_info = mg_utils.get_sim_by_id(ext_target_id)
+                        
+                        if target_sim_info:
+                            is_target_female = getattr(target_sim_info, 'is_female', False)
+                            target_key = "target_female" if is_target_female else "target_male"
+                            matrix_values = source_config.get(target_key, {})
+                            
+                            target_age_norm = str(getattr(target_sim_info, 'age', '')).split('.')[-1].lower().replace('_', '')
+                            t_friendship = None
+                            t_romance = None
+                            
+                            for k, v in matrix_values.items():
+                                if type(v) is dict and k.lower().replace('_', '') == target_age_norm:
+                                    t_friendship = v.get("friendship", -999)
+                                    t_romance = v.get("romance", -999)
+                                    break
+                            else:
+                                t_friendship = matrix_values.get("friendship", -999)
+                                t_romance = matrix_values.get("romance", -999)
+                            
+                            if t_friendship == -999: t_friendship = None
+                            if t_romance == -999: t_romance = None
+                            
+                            # Beziehungswerte beim SOURCE anwenden
+                            if t_friendship is not None and f_track:
+                                curr_f = tracker.get_relationship_score(ext_target_id, f_track)
+                                if curr_f < t_friendship:
+                                    try: 
+                                        tracker.set_relationship_score(ext_target_id, t_friendship, f_track)
+                                        target_modified = True
+                                    except: pass
+                                    
+                            if t_romance is not None and r_track:
+                                if getattr(sim_info, 'age', 0) >= 8 and getattr(target_sim_info, 'age', 0) >= 8:
+                                    curr_r = tracker.get_relationship_score(ext_target_id, r_track)
+                                    if curr_r < t_romance:
+                                        try: 
+                                            tracker.set_relationship_score(ext_target_id, t_romance, r_track)
+                                            target_modified = True
+                                        except: pass
+                            
+                            processed_target_ids.add(ext_target_id)
+                            
+                    if target_modified: modified_count += 1
+
+        # --- 3. POSITIVE HAUSHALTSBEZIEHUNGEN FORCIEREN (Source -> Hubs) ---
         target_f = active_set.get("harmony_friendship", -999)
         target_r = active_set.get("harmony_romance", -999)
         target_status = active_set.get("target_relationship_status", "")
@@ -169,6 +196,7 @@ def apply_relations(sim_info, set_id, out, force_debug, group_targets=None):
                     except: pass
                 
             if target_r != -999 and r_track:
+                # Alter 8 ist typischerweise Young Adult in der EA Enumeration
                 if getattr(sim_info, 'age', 0) >= 8 and getattr(target_sim, 'age', 0) >= 8:
                     curr_r = tracker.get_relationship_score(target_sim.sim_id, r_track)
                     if curr_r < target_r:
@@ -206,52 +234,3 @@ def _apply_status_bit_via_command(sim_id, target_id, status):
             return True
         except: pass
     return False
-
-# --- MANUELLE LOGIK FÜR RMG.ADD ---
-def apply_manual_relation(sim_info, target_sim, settings, out, force_debug=False):
-    """
-    Stellt die Verbindung her: Bekanntmachen (HasMet), Friendship/Romance 
-    und physischer Teleport. Schluessel werden manuell im Spiel vergeben.
-    """
-    try:
-        tracker = getattr(sim_info, 'relationship_tracker', None)
-        if not tracker: return
-        
-        target_id = target_sim.sim_id
-        
-        # 1. Bekanntmachen (HasMet) - Schaltet soziale Interaktionen frei
-        try:
-            # 15803 = relbit_HasMet
-            sims4.commands.execute(f"relationship.add_bit {sim_info.sim_id} {target_id} 15803", None)
-        except: pass
-
-        # 2. Friendship / Romance setzen
-        t_friendship = settings.get("friendship", 100)
-        t_romance = settings.get("romance", -999)
-        spawn_sim = settings.get("spawn_sim", True)
-        
-        skill_manager = services.get_instance_manager(sims4.resources.Types.STATISTIC)
-        f_track = skill_manager.get(16650) if skill_manager else None
-        
-        if f_track:
-            tracker.set_relationship_score(target_id, t_friendship, f_track)
-            out(f" -> Friendship gesetzt auf: {t_friendship}")
-            
-        # 3. Teleport (Wachmacher)
-        if spawn_sim:
-            client = services.client_manager().get_first_client()
-            client_id = client.id if client else None
-            sims4.commands.execute(f"sims.summon_sim_to_zone {target_id}", client_id)
-            
-            # API Fallback
-            try:
-                if hasattr(target_sim, 'inject_into_zone'):
-                    current_zone = getattr(services, 'current_zone', lambda: None)()
-                    if current_zone: target_sim.inject_into_zone(current_zone.id)
-            except: pass
-
-            out(" -> [INFO] Ziel-Sim wurde auf das aktuelle Grundstueck teleportiert.")
-
-    except Exception as e:
-        out(f"[FEHLER] apply_manual_relation: {e}")
-        mg_logger.log(f"[FEHLER rmg.add] {e}", is_debug=False, out=None, force_debug=force_debug)
