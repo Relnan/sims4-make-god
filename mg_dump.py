@@ -1,4 +1,3 @@
-# mg_dump.py
 import os
 import re
 from datetime import datetime
@@ -9,13 +8,16 @@ import mg_config
 import mg_utils
 import mg_logger
 
+def get_timestamp():
+    return datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+
 def _sanitize_filename_part(value):
     cleaned = re.sub(r'[<>:"/\\|?*]+', '_', str(value or '').strip())
     return cleaned or 'unknown'
 
 def _get_dump_filepath(targets, prefix="rmg_dump"):
     """Generiert einen sicheren Dateinamen. Bei mehreren Zielen wird es ein Household-Dump."""
-    timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+    timestamp = get_timestamp()
     os.makedirs(mg_config.MOD_FOLDER, exist_ok=True)
     
     if len(targets) > 1:
@@ -24,8 +26,7 @@ def _get_dump_filepath(targets, prefix="rmg_dump"):
         sim = targets[0]
         gender_str = _sanitize_filename_part(str(getattr(sim, 'gender', 'UNKNOWN')).split('.')[-1].lower())
         try:
-            occult_types = mg_utils.get_occult_types(sim)
-            occult_str = _sanitize_filename_part("_".join(occult_types))
+            occult_str = _sanitize_filename_part(mg_utils.get_occult_type(sim))
         except:
             occult_str = "unknown"
         first_name = _sanitize_filename_part(getattr(sim, 'first_name', 'Unbekannt'))
@@ -34,26 +35,204 @@ def _get_dump_filepath(targets, prefix="rmg_dump"):
     else:
         return os.path.join(mg_config.MOD_FOLDER, f"{prefix}_Empty_{timestamp}.md")
 
+
+# --- MODULARE DUMP FUNKTIONEN (MARKDOWN) ---
+
+def get_md_traits(sim_info):
+    md_lines = ["\n## 🧬 Traits (Merkmale)"]
+    if hasattr(sim_info, 'trait_tracker') and sim_info.trait_tracker:
+        t_list = []
+        for t in sim_info.trait_tracker.equipped_traits:
+            t_type = str(getattr(t, 'trait_type', 'UNKNOWN')).split('.')[-1]
+            t_name = getattr(t, '__name__', str(t))
+            t_list.append(f"- `[{t_type}]` {t_name}")
+        t_list.sort()
+        if t_list: md_lines.extend(t_list)
+        else: md_lines.append("- *Keine Traits gefunden.*")
+    else:
+        md_lines.append("- *Trait-Tracker nicht verfuegbar.*")
+    return md_lines
+
+def get_md_perks(sim_info):
+    md_lines = ["\n## 🌟 Perks & Bucks (Okkult & Ruhm)"]
+    bucks_tracker = getattr(sim_info, 'bucks_tracker', None)
+    if not bucks_tracker and hasattr(sim_info, 'get_bucks_tracker'):
+        try: bucks_tracker = sim_info.get_bucks_tracker()
+        except: pass
+
+    if bucks_tracker:
+        perks_list = []
+        perk_manager = services.get_instance_manager(sims4.resources.Types.BUCKS_PERK) if hasattr(sims4.resources.Types, 'BUCKS_PERK') else None
+        
+        if perk_manager:
+            for perk_inst in perk_manager.types.values():
+                try:
+                    if bucks_tracker.is_perk_unlocked(perk_inst):
+                        p_name = getattr(perk_inst, '__name__', str(perk_inst))
+                        perks_list.append(f"- `[PERK]` {p_name}")
+                except:
+                    pass
+                    
+        perks_list.sort()
+        if perks_list: md_lines.extend(perks_list)
+        else: md_lines.append("- *Keine aktiven Perks gefunden.*")
+    else:
+        md_lines.append("- *Bucks-Tracker nicht verfuegbar.*")
+    return md_lines
+
+def get_md_spells(sim_info):
+    md_lines = ["\n## 🔮 Zaubersprueche & Unlocks"]
+    spell_list = []
+    
+    potential_trackers = []
+    for attr_name in dir(sim_info):
+        if 'tracker' in attr_name.lower() or 'magic' in attr_name.lower():
+            t_obj = getattr(sim_info, attr_name, None)
+            if t_obj: potential_trackers.append(t_obj)
+    
+    if hasattr(sim_info, 'get_unlock_tracker'):
+        try: potential_trackers.append(sim_info.get_unlock_tracker())
+        except: pass
+
+    if hasattr(sims4.resources.Types, 'SNIPPET'):
+        snippet_manager = services.get_instance_manager(sims4.resources.Types.SNIPPET)
+        if snippet_manager:
+            for inst in snippet_manager.types.values():
+                u_name = getattr(inst, '__name__', '')
+                if 'spell' in u_name.lower() or 'magic' in u_name.lower():
+                    for tracker in potential_trackers:
+                        try:
+                            if (hasattr(tracker, 'is_unlocked') and tracker.is_unlocked(inst)) or \
+                               (hasattr(tracker, 'has_unlock') and tracker.has_unlock(inst)) or \
+                               (hasattr(tracker, 'has_spell') and tracker.has_spell(inst)):
+                                spell_list.append(f"- `[SPELL]` {u_name}")
+                                break
+                        except: pass
+                        
+    if hasattr(sims4.resources.Types, 'RECIPE'):
+        recipe_manager = services.get_instance_manager(sims4.resources.Types.RECIPE)
+        if recipe_manager:
+            for inst in recipe_manager.types.values():
+                u_name = getattr(inst, '__name__', '')
+                if 'potion' in u_name.lower() or 'recipe_magic' in u_name.lower():
+                    for tracker in potential_trackers:
+                        try:
+                            if (hasattr(tracker, 'is_unlocked') and tracker.is_unlocked(inst)) or \
+                               (hasattr(tracker, 'has_unlock') and tracker.has_unlock(inst)):
+                                spell_list.append(f"- `[POTION]` {u_name}")
+                                break
+                        except: pass
+                        
+    spell_list = list(set(spell_list))
+    spell_list.sort()
+    
+    if spell_list: md_lines.extend(spell_list)
+    else: md_lines.append("- *Keine relevanten Zauber/Traenke gefunden.*")
+    return md_lines
+
+def get_md_skills(sim_info):
+    md_lines = ["\n## 📚 Skills (Faehigkeiten)"]
+    skill_manager = services.get_instance_manager(sims4.resources.Types.STATISTIC)
+    if skill_manager:
+        s_list = []
+        for stat_type in tuple(skill_manager.types.values()):
+            if hasattr(stat_type, 'is_skill') and stat_type.is_skill:
+                s_name = getattr(stat_type, '__name__', str(stat_type))
+                current_val = 0
+                tracker = sim_info.get_tracker(stat_type)
+                if tracker:
+                    stat_inst = tracker.get_statistic(stat_type)
+                    if stat_inst:
+                        try: current_val = int(stat_inst.get_value())
+                        except: pass
+                
+                if current_val > 0:
+                    s_list.append(f"- **[Level {current_val:02d}]** {s_name}")
+        s_list.sort()
+        if s_list: md_lines.extend(s_list)
+        else: md_lines.append("- *Keine aktiven Skills gefunden.*")
+    else:
+        md_lines.append("- *Skill-Manager nicht verfuegbar.*")
+    return md_lines
+
+def get_md_relations(sim_info):
+    md_lines = ["\n## 💖 Beziehungen (Relationships)"]
+    tracker = getattr(sim_info, 'relationship_tracker', None)
+    skill_manager = services.get_instance_manager(sims4.resources.Types.STATISTIC)
+    
+    if tracker and skill_manager:
+        f_track = skill_manager.get(16650)
+        r_track = skill_manager.get(16651)
+        r_list = []
+        
+        for target_id in tuple(tracker.target_sim_gen()):
+            target_sim = mg_utils.get_sim_by_id(target_id)
+            t_name = f"{getattr(target_sim, 'first_name', '')} {getattr(target_sim, 'last_name', '')}".strip() if target_sim else "Unbekannter Sim"
+
+            bits = tuple(tracker.get_all_bits(target_id))
+            bit_names = [getattr(b, '__name__', str(b)) for b in bits]
+            
+            f_score = tracker.get_relationship_score(target_id, f_track) if f_track else 0
+            r_score = tracker.get_relationship_score(target_id, r_track) if r_track else 0
+            
+            r_list.append(f"- **{t_name}** (ID: `{target_id}`)")
+            if bit_names:
+                r_list.append(f"  - *Bits:* `{'`, `'.join(bit_names)}`")
+            r_list.append(f"  - *Werte:* Freundschaft: {f_score:.0f} | Romantik: {r_score:.0f}")
+            
+        if r_list: md_lines.extend(r_list)
+        else: md_lines.append("- *Keine Beziehungen gefunden.*")
+    else:
+         md_lines.append("- *Relationship-Tracker nicht verfuegbar.*")
+    return md_lines
+
+def get_md_stats(sim_info):
+    md_lines = ["\n## 📊 Statistiken & Commodities"]
+    
+    raw_blacklist = mg_config.get("dump_blacklist_keywords", [])
+    if not raw_blacklist: raw_blacklist = []
+    dump_blacklist = [str(b).lower() for b in raw_blacklist]
+    
+    stats_list = []
+    if hasattr(sim_info, 'commodity_tracker') and sim_info.commodity_tracker:
+        for stat in sim_info.commodity_tracker:
+            try:
+                t = getattr(stat, 'stat_type', type(stat))
+                s_name = getattr(t, '__name__', str(t))
+                if not any(b in s_name.lower() for b in dump_blacklist):
+                    val = stat.get_value()
+                    stats_list.append(f"- `[COMMODITY]` {s_name} : **{val:.2f}**")
+            except: pass
+            
+    if hasattr(sim_info, 'statistic_tracker') and sim_info.statistic_tracker:
+        for stat in sim_info.statistic_tracker:
+            try:
+                t = getattr(stat, 'stat_type', type(stat))
+                s_name = getattr(t, '__name__', str(t))
+                if not any(b in s_name.lower() for b in dump_blacklist):
+                    val = stat.get_value()
+                    stats_list.append(f"- `[STATISTIC]` {s_name} : **{val:.2f}**")
+            except: pass
+            
+    stats_list.sort()
+    if stats_list: md_lines.extend(stats_list)
+    else: md_lines.append("- *Keine Stats gefunden.*")
+    return md_lines
+
 def _get_sim_data_md(sim_info):
     """Sammelt alle Daten eines einzelnen Sims fehlerresistent und formatiert sie als Markdown-String."""
     md_lines = []
     
     try:
-        raw_blacklist = mg_config.get("dump_blacklist_keywords", [])
-        if not raw_blacklist: raw_blacklist = []
-        dump_blacklist = [str(b).lower() for b in raw_blacklist]
-        
         first_name = getattr(sim_info, 'first_name', 'Unbekannt')
         last_name = getattr(sim_info, 'last_name', '')
         
-        # --- HEADER ---
         md_lines.append(f"# Sim: {first_name} {last_name}")
         
         try:
             age_str = str(getattr(sim_info, 'age', 'UNKNOWN')).split('.')[-1]
             gender_str = str(getattr(sim_info, 'gender', 'UNKNOWN')).split('.')[-1]
-            occult_types = mg_utils.get_occult_types(sim_info)
-            occult_str = ", ".join(occult_types)
+            occult_str = mg_utils.get_occult_type(sim_info)
             sim_id = getattr(sim_info, 'sim_id', 'UNKNOWN')
             md_lines.append(f"**ID:** `{sim_id}` | **Alter:** {age_str} | **Geschlecht:** {gender_str} | **Okkult:** {occult_str}")
         except Exception as header_e:
@@ -61,178 +240,76 @@ def _get_sim_data_md(sim_info):
         
         md_lines.append("\n---")
         
-        # --- TRAITS ---
-        md_lines.append("\n## 🧬 Traits (Merkmale)")
-        if hasattr(sim_info, 'trait_tracker') and sim_info.trait_tracker:
-            t_list = []
-            for t in sim_info.trait_tracker.equipped_traits:
-                t_type = str(getattr(t, 'trait_type', 'UNKNOWN')).split('.')[-1]
-                t_name = getattr(t, '__name__', str(t))
-                t_list.append(f"- `[{t_type}]` {t_name}")
-            t_list.sort()
-            if t_list: md_lines.extend(t_list)
-            else: md_lines.append("- *Keine Traits gefunden.*")
-        else:
-            md_lines.append("- *Trait-Tracker nicht verfügbar.*")
-
-        # --- PERKS & BUCKS ---
-        md_lines.append("\n## 🌟 Perks & Bucks (Okkult & Ruhm)")
-        bucks_tracker = getattr(sim_info, 'bucks_tracker', None)
-        if not bucks_tracker and hasattr(sim_info, 'get_bucks_tracker'):
-            try: bucks_tracker = sim_info.get_bucks_tracker()
-            except: pass
-
-        if bucks_tracker:
-            perks_list = []
-            perk_manager = services.get_instance_manager(sims4.resources.Types.BUCKS_PERK) if hasattr(sims4.resources.Types, 'BUCKS_PERK') else None
-            
-            if perk_manager:
-                for perk_inst in perk_manager.types.values():
-                    try:
-                        if bucks_tracker.is_perk_unlocked(perk_inst):
-                            p_name = getattr(perk_inst, '__name__', str(perk_inst))
-                            perks_list.append(f"- `[PERK]` {p_name}")
-                    except: pass
-                        
-            perks_list.sort()
-            if perks_list: md_lines.extend(perks_list)
-            else: md_lines.append("- *Keine aktiven Perks gefunden.*")
-        else:
-            md_lines.append("- *Bucks-Tracker nicht verfügbar.*")
-
-        # --- SPELLS & UNLOCKS ---
-        md_lines.append("\n## 🔮 Zaubersprüche & Unlocks")
-        spell_list = []
-        
-        potential_trackers = []
-        for attr_name in dir(sim_info):
-            if 'tracker' in attr_name.lower() or 'magic' in attr_name.lower():
-                t_obj = getattr(sim_info, attr_name, None)
-                if t_obj: potential_trackers.append(t_obj)
-        
-        if hasattr(sim_info, 'get_unlock_tracker'):
-            try: potential_trackers.append(sim_info.get_unlock_tracker())
-            except: pass
-
-        if hasattr(sims4.resources.Types, 'SNIPPET'):
-            snippet_manager = services.get_instance_manager(sims4.resources.Types.SNIPPET)
-            if snippet_manager:
-                for inst in snippet_manager.types.values():
-                    u_name = getattr(inst, '__name__', '')
-                    if 'spell' in u_name.lower() or 'magic' in u_name.lower():
-                        for tracker in potential_trackers:
-                            try:
-                                if (hasattr(tracker, 'is_unlocked') and tracker.is_unlocked(inst)) or \
-                                   (hasattr(tracker, 'has_unlock') and tracker.has_unlock(inst)) or \
-                                   (hasattr(tracker, 'has_spell') and tracker.has_spell(inst)):
-                                    spell_list.append(f"- `[SPELL]` {u_name}")
-                                    break
-                            except: pass
-                            
-        if hasattr(sims4.resources.Types, 'RECIPE'):
-            recipe_manager = services.get_instance_manager(sims4.resources.Types.RECIPE)
-            if recipe_manager:
-                for inst in recipe_manager.types.values():
-                    u_name = getattr(inst, '__name__', '')
-                    if 'potion' in u_name.lower() or 'recipe_magic' in u_name.lower():
-                        for tracker in potential_trackers:
-                            try:
-                                if (hasattr(tracker, 'is_unlocked') and tracker.is_unlocked(inst)) or \
-                                   (hasattr(tracker, 'has_unlock') and tracker.has_unlock(inst)):
-                                    spell_list.append(f"- `[POTION]` {u_name}")
-                                    break
-                            except: pass
-                            
-        spell_list = list(set(spell_list))
-        spell_list.sort()
-        
-        if spell_list: md_lines.extend(spell_list)
-        else: md_lines.append("- *Keine relevanten Zauber/Tränke gefunden.*")
-
-        # --- SKILLS ---
-        md_lines.append("\n## 📚 Skills (Fähigkeiten)")
-        skill_manager = services.get_instance_manager(sims4.resources.Types.STATISTIC)
-        if skill_manager:
-            s_list = []
-            for stat_type in tuple(skill_manager.types.values()):
-                if hasattr(stat_type, 'is_skill') and stat_type.is_skill:
-                    s_name = getattr(stat_type, '__name__', str(stat_type))
-                    current_val = 0
-                    tracker = sim_info.get_tracker(stat_type)
-                    if tracker:
-                        stat_inst = tracker.get_statistic(stat_type)
-                        if stat_inst:
-                            try: current_val = int(stat_inst.get_value())
-                            except: pass
-                    
-                    if current_val > 0:
-                        s_list.append(f"- **[Level {current_val:02d}]** {s_name}")
-            s_list.sort()
-            if s_list: md_lines.extend(s_list)
-            else: md_lines.append("- *Keine aktiven Skills gefunden.*")
-        else:
-            md_lines.append("- *Skill-Manager nicht verfügbar.*")
-
-        # --- RELATIONSHIPS ---
-        md_lines.append("\n## 💖 Beziehungen (Relationships)")
-        tracker = getattr(sim_info, 'relationship_tracker', None)
-        if tracker and skill_manager:
-            f_track = skill_manager.get(16650)
-            r_track = skill_manager.get(16651)
-            r_list = []
-            
-            for target_id in tuple(tracker.target_sim_gen()):
-                target_sim = mg_utils.get_sim_by_id(target_id)
-                t_name = f"{getattr(target_sim, 'first_name', '')} {getattr(target_sim, 'last_name', '')}".strip() if target_sim else "Unbekannter Sim"
-
-                bits = tuple(tracker.get_all_bits(target_id))
-                bit_names = [getattr(b, '__name__', str(b)) for b in bits]
-                
-                f_score = tracker.get_relationship_score(target_id, f_track) if f_track else 0
-                r_score = tracker.get_relationship_score(target_id, r_track) if r_track else 0
-                
-                r_list.append(f"- **{t_name}** (ID: `{target_id}`)")
-                if bit_names:
-                    r_list.append(f"  - *Bits:* `{'`, `'.join(bit_names)}`")
-                r_list.append(f"  - *Werte:* Freundschaft: {f_score:.0f} | Romantik: {r_score:.0f}")
-                
-            if r_list: md_lines.extend(r_list)
-            else: md_lines.append("- *Keine Beziehungen gefunden.*")
-        else:
-             md_lines.append("- *Relationship-Tracker nicht verfügbar.*")
-
-        # --- STATS & COMMODITIES ---
-        md_lines.append("\n## 📊 Statistiken & Commodities")
-        stats_list = []
-        if hasattr(sim_info, 'commodity_tracker') and sim_info.commodity_tracker:
-            for stat in sim_info.commodity_tracker:
-                try:
-                    t = getattr(stat, 'stat_type', type(stat))
-                    s_name = getattr(t, '__name__', str(t))
-                    if not any(b in s_name.lower() for b in dump_blacklist):
-                        val = stat.get_value()
-                        stats_list.append(f"- `[COMMODITY]` {s_name} : **{val:.2f}**")
-                except: pass
-                
-        if hasattr(sim_info, 'statistic_tracker') and sim_info.statistic_tracker:
-            for stat in sim_info.statistic_tracker:
-                try:
-                    t = getattr(stat, 'stat_type', type(stat))
-                    s_name = getattr(t, '__name__', str(t))
-                    if not any(b in s_name.lower() for b in dump_blacklist):
-                        val = stat.get_value()
-                        stats_list.append(f"- `[STATISTIC]` {s_name} : **{val:.2f}**")
-                except: pass
-                
-        stats_list.sort()
-        if stats_list: md_lines.extend(stats_list)
-        else: md_lines.append("- *Keine Stats gefunden.*")
+        md_lines.extend(get_md_traits(sim_info))
+        md_lines.extend(get_md_perks(sim_info))
+        md_lines.extend(get_md_spells(sim_info))
+        md_lines.extend(get_md_skills(sim_info))
+        md_lines.extend(get_md_relations(sim_info))
+        md_lines.extend(get_md_stats(sim_info))
 
     except Exception as e:
         md_lines.append(f"\n**[KRITISCHER FEHLER BEIM AUSLESEN DIESES SIMS]:** {e}\n")
 
     md_lines.append("\n<br>\n")
     return "\n".join(md_lines)
+
+
+# --- AI EXPORT SYSTEM (FLACH & MASCHINENLESBAR) ---
+
+def export_ai_debug_dump(sim_info):
+    """Generiert einen flachen, maschinenlesbaren State-Dump ohne Markdown-Bloat fuer Debug-Comparisons."""
+    lines = []
+    try:
+        # Traits
+        if hasattr(sim_info, 'trait_tracker') and sim_info.trait_tracker:
+            for t in sim_info.trait_tracker.equipped_traits:
+                lines.append(f"TRAIT:{getattr(t, '__name__', str(t))}")
+                
+        # Skills
+        skill_manager = services.get_instance_manager(sims4.resources.Types.STATISTIC)
+        if skill_manager:
+            for stat_type in tuple(skill_manager.types.values()):
+                if hasattr(stat_type, 'is_skill') and stat_type.is_skill:
+                    tracker = sim_info.get_tracker(stat_type)
+                    if tracker:
+                        stat_inst = tracker.get_statistic(stat_type)
+                        if stat_inst:
+                            val = 0
+                            try: val = int(stat_inst.get_value())
+                            except: pass
+                            if val > 0: lines.append(f"SKILL:{getattr(stat_type, '__name__', '')}:{val}")
+                            
+        # Relations (Inklusive Scores und Bits)
+        tracker = getattr(sim_info, 'relationship_tracker', None)
+        if tracker and skill_manager:
+            f_track = skill_manager.get(16650)
+            r_track = skill_manager.get(16651)
+            for target_id in tuple(tracker.target_sim_gen()):
+                bits = tuple(tracker.get_all_bits(target_id))
+                bit_names = [getattr(b, '__name__', '') for b in bits]
+                f_score = tracker.get_relationship_score(target_id, f_track) if f_track else 0
+                r_score = tracker.get_relationship_score(target_id, r_track) if r_track else 0
+                lines.append(f"RELATION:{target_id}:F[{f_score:.0f}]_R[{r_score:.0f}]:{','.join(bit_names)}")
+                
+    except Exception as e:
+        lines.append(f"ERROR:{str(e)}")
+    return "\n".join(lines)
+
+def export_debug_comparison(sim_info, timestamp, before_str, after_str):
+    """Schreibt den Vorher-Nachher Vergleich in die dateispezifische Run-Logdatei."""
+    filename = os.path.join(mg_config.MOD_FOLDER, f"make_god_run_{timestamp}.txt")
+    try:
+        with open(filename, 'a', encoding='utf-8') as f:
+            f.write(f"\n=== SIM: {getattr(sim_info, 'first_name', '')} {getattr(sim_info, 'last_name', '')} ({getattr(sim_info, 'sim_id', 'UNKNOWN')}) ===\n")
+            f.write("--- BEFORE ---\n")
+            f.write(before_str + "\n")
+            f.write("--- AFTER ---\n")
+            f.write(after_str + "\n")
+            f.write("=========================================\n")
+    except: pass
+
+
+# --- STANDARD EXPORT ROUTINEN ---
 
 def execute_dump_to_file(targets, out):
     """Nimmt eine Liste von Sims, holt deren MD-Daten und schreibt sie in eine Datei."""
@@ -248,13 +325,10 @@ def execute_dump_to_file(targets, out):
             f.write(f"\n")
             f.write(f"# 🗂️ MakeGod Dump Report\n")
             
-            f.write(f"## 📋 Haushaltsübersicht ({len(targets)} Sims)\n")
+            f.write(f"## 📋 Haushaltsuebersicht ({len(targets)} Sims)\n")
             for sim in targets:
-                try: 
-                    occ_list = mg_utils.get_occult_types(sim)
-                    occ = ", ".join(occ_list)
-                except: 
-                    occ = "unknown"
+                try: occ = mg_utils.get_occult_type(sim)
+                except: occ = "unknown"
                 first_name = getattr(sim, 'first_name', 'Unbekannt')
                 last_name = getattr(sim, 'last_name', '')
                 sim_id = getattr(sim, 'sim_id', 'UNKNOWN')
@@ -270,17 +344,18 @@ def execute_dump_to_file(targets, out):
     except Exception as e:
         mg_logger.log(f"[FEHLER] Dump fehlgeschlagen: {e}", is_debug=False, out=out)
 
+
 def execute_reference_dump(out):
-    """Liest alle verfügbaren Traits, Perks und Zauber direkt aus der Engine aus."""
+    """Liest alle verfuegbaren Traits, Perks und Zauber direkt aus der Engine aus."""
     mg_logger.log("Starte Reference-Dump aller Engine-Daten...", is_debug=False, out=out)
-    timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+    timestamp = get_timestamp()
     filepath = os.path.join(mg_config.MOD_FOLDER, f"rmg_reference_dump_{timestamp}.md")
 
     try:
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(f"\n")
             f.write("# 🗂️ MakeGod Master Reference Dump\n")
-            f.write("Dieses Dokument enthält **ALLE** aktuell im Spiel geladenen Traits, Perks und Spells (inkl. Mods).\n\n")
+            f.write("Dieses Dokument enthaelt **ALLE** aktuell im Spiel geladenen Traits, Perks und Spells (inkl. Mods).\n\n")
 
             # TRAITS
             if hasattr(sims4.resources.Types, 'TRAIT'):
@@ -308,7 +383,7 @@ def execute_reference_dump(out):
                     f.write("\n".join(perks) + "\n\n")
 
             # SPELLS
-            f.write("## 🔮 Alle Zauber & Tränke (Recipes / Spells)\n")
+            f.write("## 🔮 Alle Zauber & Traenke (Recipes / Spells)\n")
             spells = []
             if hasattr(sims4.resources.Types, 'RECIPE'):
                 recipe_manager = services.get_instance_manager(sims4.resources.Types.RECIPE)
@@ -333,6 +408,7 @@ def execute_reference_dump(out):
         out(f"Reference Dump abgeschlossen! Master-Datei liegt im Mod-Ordner.")
     except Exception as e:
         mg_logger.log(f"[FEHLER] Reference-Dump fehlgeschlagen: {e}", is_debug=False, out=out)
+
 
 # --- COMMAND REGISTRIERUNG ---
 @sims4.commands.Command('rmg.dump', 'make_god_dump', command_type=sims4.commands.CommandType.Live)

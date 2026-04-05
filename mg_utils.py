@@ -1,7 +1,9 @@
-# mg_utils.py
 import services
 from sims.sim_info_types import Gender
 import mg_config
+
+# Zentrale Liste aller erlaubten Okkult-Typen (dient auch als Sortier-Prioritaet fuer Determinsmus)
+KNOWN_OCCULTS = ['vampire', 'spellcaster', 'werewolf', 'mermaid', 'alien', 'fairy', 'ghost', 'human']
 
 def get_sim_by_id(sim_id):
     """Gibt den SimInfo anhand der ID zurueck."""
@@ -9,7 +11,7 @@ def get_sim_by_id(sim_id):
     return sim_info_manager.get(sim_id) if sim_info_manager else None
 
 def get_sims_by_name(name_string, active_household=None):
-    """Sucht nach einem Sim ueber den Namen."""
+    """Sucht nach einem Sim ueber den exakten Namen."""
     sim_info_manager = services.sim_info_manager()
     if not sim_info_manager: return []
     
@@ -46,14 +48,23 @@ def get_sims_by_fuzzy_name(name_string, active_household=None):
 
     return all_matches
 
-def get_occult_types(sim_info):
+def get_occult_types(sim_info, override_occult=None):
     """
-    Ermittelt ALLE Okkult-Typen strikt und gibt eine Liste zurueck.
-    witch wird zu spellcaster gemappt.
+    Ermittelt ALLE Okkult-Typen strikt und gibt eine deterministisch sortierte Liste zurueck.
+    Wird ein override_occult uebergeben, wird dieser validiert und ueberschreibt die native Erkennung.
     """
+    # 1. Override-Validierung
+    if override_occult is not None:
+        if isinstance(override_occult, str):
+            occ = override_occult.lower().strip()
+            if occ in KNOWN_OCCULTS:
+                return [occ]
+            else:
+                raise ValueError(f"Unbekannter Okkult-Override '{override_occult}'. Erlaubte Typen: {', '.join(KNOWN_OCCULTS)}")
+
+    # 2. Native Erkennung (Fallback)
     found_types = set()
     
-    # 1. Check über den Occult Tracker (zuverlässig)
     try:
         if hasattr(sim_info, 'occult_tracker') and sim_info.occult_tracker:
             if sim_info.occult_tracker.has_any_occult_or_part_occult_trait():
@@ -66,7 +77,6 @@ def get_occult_types(sim_info):
                             found_types.add(type_str)
     except: pass
 
-    # 2. Fallback über Traits (exaktes Matching)
     if hasattr(sim_info, 'trait_tracker') and sim_info.trait_tracker:
         for trait in sim_info.trait_tracker.equipped_traits:
             t_name = getattr(trait, '__name__', '').lower()
@@ -78,7 +88,27 @@ def get_occult_types(sim_info):
             elif t_name == 'trait_occult_fairy': found_types.add('fairy')
             elif t_name == 'trait_isghost': found_types.add('ghost')
             
-    return list(found_types) if found_types else ["human"]
+    # 3. Deterministische Sortierung anhand von KNOWN_OCCULTS
+    if found_types:
+        sorted_types = [occ for occ in KNOWN_OCCULTS if occ in found_types]
+        # Falls ein Custom-Okkult existiert, der nicht in der Liste steht, hinten anhaengen
+        for occ in sorted(list(found_types)):
+            if occ not in sorted_types:
+                sorted_types.append(occ)
+        return sorted_types
+        
+    return ["human"]
+
+def get_occult_type(sim_info, override_occult=None):
+    """
+    Ermittelt den primaeren Okkult-Typen und gibt ihn als einzelnen String zurueck.
+    Dank der Sortierung in get_occult_types() ist dies nun 100% deterministisch.
+    """
+    types = get_occult_types(sim_info, override_occult)
+    for t in types:
+        if t != 'human':
+            return t
+    return "human"
 
 def is_minor(sim_info):
     """Prueft, ob der Sim ein Kind oder juenger ist."""

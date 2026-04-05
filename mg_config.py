@@ -1,4 +1,3 @@
-# mg_config.py
 import os
 import json
 import sims4.commands
@@ -15,10 +14,53 @@ _config_data = None
 DEFAULT_CONFIG_STR = """{
     "_comment_global": "MakeGod Mod Konfiguration. Alle Schluessel, die mit '_' beginnen, werden ignoriert.",
     "language": "de",
-    "debug_log": true,
+    "debug_level": "normal",
+    "_comment_debug": "Level: 'none' (Aus), 'normal' (Nur Text-Log), 'all' (Text-Log + Vorher/Nachher-Dump).",
+    "debug_alarm_delay": 5.0,
     "log_mode": "overwrite",
     "include_roommates_in_all": true,
     "include_keyholders_in_all": true,
+
+    "buffs_exclude_from_clear": [
+        "buff_WitchOccult_MyPowerGrows",
+        "buff_Motives_Werewolf_Fury",
+        "buff_Vampire_Sunlight_Debuff",
+        "buff_Vampire_Thirst_Debuff"
+    ],
+
+    "relationship_system": {
+        "global_rules": {
+            "allow_downgrade": false,
+            "allow_incest": false,
+            "allow_teen_adult_romance": false
+        },
+        "status_definitions": {
+            "friend": {
+                "add_bits": ["friendship-friend", "relbit_Friend"],
+                "remove_conflicts": ["enemy", "despised", "bit_NoLongerFriends"]
+            },
+            "best_friend": {
+                "add_bits": ["friendship-bff", "relbit_BestFriends"],
+                "remove_conflicts": ["enemy", "despised", "bit_NoLongerFriends"]
+            },
+            "woohoo_partner": {
+                "add_bits": ["relBit_SexualORientation_WooHooPartners", "RomanticCombo_WoohooPartners"],
+                "remove_conflicts": ["RomanticCombo_Soulmates", "RomanticCombo_Married", "enemy", "despised"]
+            },
+            "significant_other": {
+                "add_bits": ["RomanticCombo_SignificantOther"],
+                "remove_conflicts": ["RomanticCombo_Soulmates", "RomanticCombo_Married", "enemy", "relbit_SocialContext_Awkwardness_Casual"]
+            },
+            "engaged": {
+                "add_bits": ["RomanticCombo_Engaged"],
+                "remove_conflicts": ["RomanticCombo_Married", "enemy"]
+            },
+            "married": {
+                "add_bits": ["RomanticCombo_Married"],
+                "remove_conflicts": ["enemy"]
+            }
+        }
+    },
 
     "manual_add_settings": {
         "_comment": "Einstellungen fuer den Befehl rmg.add. Werte -999 ignorieren die Zuweisung.",
@@ -28,7 +70,7 @@ DEFAULT_CONFIG_STR = """{
     },
 
     "batches": {
-        "_comment": "Befehlslisten. Platzhalter wie {0}, {1} werden durch zusaetzliche Parameter ersetzt (z.B. rmg.bat setup_npc \\"yuki behr\\").",
+        "_comment": "Befehlslisten. Platzhalter wie {0}, {1} werden durch zusaetzliche Parameter ersetzt (z.B. rmg.bat setup_npc \\"yuki behr\\\").",
         "test_batch": [
             "rmg.dump all",
             "rmg.all",
@@ -55,11 +97,40 @@ DEFAULT_CONFIG_STR = """{
             "rmg.add id [sim_id]",
             "sims.give_satisfaction_points {0} [sim_id]",
             "rmg.id [sim_id] {1}"
+        ],
+        "setup_my_npcs": [
+            "rmg.add name Morgan Fyres",
+            "rmg.name Morgan Fyres 3",
+            "rmg.add name Baby Ariel",
+            "rmg.name Baby Ariel 3",
+            "rmg.add name Holly Alto",
+            "rmg.name Holly Alto 3",
+            "rmg.add name Kayla Flemming",
+            "rmg.name Kayla Flemming 3",
+            "rmg.add name Olivia Hand",
+            "rmg.name Olivia Hand 3",
+            "rmg.add name Titania Summerdream",
+            "rmg.name Titania Summerdream 3",
+            "rmg.add name Sofia Bjergsen",
+            "rmg.name Sofia Bjergsen 3",
+            "rmg.add name Luna Villareal",
+            "rmg.name Luna Villareal 3",
+            "rmg.add name Yuki Behr",
+            "rmg.name Yuki Behr 3",
+            "rmg.add name Jade Rosa",
+            "rmg.name Jade Rosa 3",
+            "rmg.add name Miko Ojo",
+            "rmg.name Miko Ojo 3",
+            "rmg.add name Alice Martin",
+            "rmg.name Alice Martin 3",
+            "rmg.add name Marra Summerdream",
+            "rmg.name Marra Summerdream 3",
+            "rmg.add name Sienna Grove"
         ]
     },
-    
+
     "_comment_macros": "=== UI MACRO SYSTEM ===",
-    "_help_macros": "Hier definierst du, was die Buttons im Klick-Menue tun. Nutze [sim_id] als Platzhalter.",
+    "_help_macros": "Hier definierst du, was die Buttons im Klick-Menue tun. Nutze [sim_id] als Platzhalter fuer den angeklickten Sim.",
     "macros": {
         "ui_playable_01": [
             "rmg.id [sim_id] option_1"
@@ -72,7 +143,7 @@ DEFAULT_CONFIG_STR = """{
         ],
         "ui_playable_04": [],
         "ui_playable_05": [],
-        
+
         "ui_npc_01": [
             "rmg.id [sim_id] 1"
         ],
@@ -84,7 +155,10 @@ DEFAULT_CONFIG_STR = """{
         ],
         "ui_npc_04": [],
         "ui_npc_05": [
-            "rmg.add id [sim_id]"
+            "rmg.add id [sim_id]",
+            "sims.give_satisfaction_points 5000 [sim_id]",
+            "rmg.id [sim_id] 3",
+            "rmg.dump id [sim_id]"
         ]
     },
     
@@ -145,12 +219,12 @@ DEFAULT_CONFIG_STR = """{
                 "scopes": ["family", "romantic", "roommate", "key"],
                 "source_male": {
                     "target_female": { 
-                        "Infant": {"friendship": 70, "romance": -999},
-                        "Toddler": {"friendship": 70, "romance": -999},
-                        "Child": {"friendship": 70, "romance": -999},
-                        "Teen": {"friendship": 100, "romance": 50},
-                        "Young_Adult": {"friendship": 100, "romance": 100},
-                        "Adult": {"friendship": 100, "romance": 70},
+                        "Infant": {"friendship": 20, "romance": -999},
+                        "Toddler": {"friendship": 20, "romance": -999},
+                        "Child": {"friendship": 20, "romance": -999},
+                        "Teen": {"friendship": 20, "romance": -999},
+                        "Young_Adult": {"friendship": 20, "romance": -999},
+                        "Adult": {"friendship": 20, "romance": -999},
                         "Elder": {"friendship": -999, "romance": -999}
                     },
                     "target_male": { 
@@ -165,12 +239,12 @@ DEFAULT_CONFIG_STR = """{
                 },
                 "source_female": {
                     "target_female": { 
-                        "Infant": {"friendship": 70, "romance": -999},
-                        "Toddler": {"friendship": 70, "romance": -999},
-                        "Child": {"friendship": 70, "romance": -999},
-                        "Teen": {"friendship": 100, "romance": 50},
-                        "Young_Adult": {"friendship": 100, "romance": 100},
-                        "Adult": {"friendship": 100, "romance": 70},
+                        "Infant": {"friendship": 20, "romance": -999},
+                        "Toddler": {"friendship": 20, "romance": -999},
+                        "Child": {"friendship": 20, "romance": -999},
+                        "Teen": {"friendship": 20, "romance": -999},
+                        "Young_Adult": {"friendship": 20, "romance": -999},
+                        "Adult": {"friendship": 20, "romance": -999},
                         "Elder": {"friendship": -999, "romance": -999}
                     },
                     "target_male": { 
@@ -219,11 +293,28 @@ DEFAULT_CONFIG_STR = """{
                 "trait_PhysicallyGifted", "trait_SociallyGifted", "trait_ForeverFresh",
                 "trait_Quick_Learner", "trait_High_Metabolism", "trait_EssenceOfFlavor", "trait_Alluring", 
                 "trait_Gregarious", "trait_Muser", "trait_HomeTurf", "trait_Collector", "trait_FamilySim",
+                "Deaderpool_MCCC_Trait_FlagFreezePhysique",
+                "Deaderpool_MCCC_Trait_FlagNoRelCull",
+                "trait_MTS_Deaderpool_McCommander_NoCullFlag",
+                "Deaderpool_MCCC_Trait_FlagNoJealousy",
+                "Deaderpool_MCCC_Trait_FlagMultiSpouse",
+                "trait_MTS_Deaderpool_McCommander_ImmortalFlag",
+                "trait_MTS_Deaderpool_McCommander_NoAgeFlag",
                 "TURBODRIVER:WickedWhims_Trait_Attractiveness_Reward_UniqueLooks",
-                "TURBODRIVER:WickedWhims_Trait_Exhibitionist"
+                "TURBODRIVER:WickedWhims_Trait_Exhibitionist",
+                "TURBODRIVER:WickedWhims_Trait_Nudity_NoSweat_Reward",
+                "TURBODRIVER:WickedWhims_Trait_Sex_SexuallyAlluring",
+                "TURBODRIVER:WickedWhims_Trait_Sex_AlwaysAccept",
+                "TURBODRIVER:WickedWhims_Trait_Sex_Attribute_GenerousLover",
+                "TURBODRIVER:WickedWhims_Trait_Relationships_Poly",
+                "TURBODRIVER:WickedWhims_Trait_STD_BladderBurn_Resistant",
+                "TURBODRIVER:WickedWhims_Trait_BodyHair_STD_NoCrabs",
+                "TURBODRIVER:WickedWhims_Trait_NudityEnthusiast"
             ],
             "traits_sex_male": [],
-            "traits_sex_female": [],
+            "traits_sex_female": [
+                "TURBODRIVER:WickedWhims_Trait_Improved_Absorbency"
+            ],
             "traits_occult": {
                 "spellcaster": ["trait_Occult_WitchOccult_BloodlineAncient", "trait_Cauldron_Potion_Immortality"],
                 "vampire": ["trait_TheKnack"], 
@@ -352,7 +443,66 @@ DEFAULT_CONFIG_STR = """{
             "spells_all": [],
             "spells_occult": {}
         },
-
+        "3": {
+            "name": "Perfect Woohoo NPC (Female)",
+            "luck": {"value": 50},
+            "allow_all_skills": false,
+            "max_player_skills": false,
+            "max_npc_skills": true,
+            "allowed_skills": ["fitness", "charisma", "cooking"],
+            "master_player_careers": false,
+            "master_npc_careers": true,
+            "harmony_friendship": 100,
+            "harmony_romance": 100,
+            "target_relationship_status": "woohoo_partner",
+            "remove_negative_relations": true,
+            "remove_negative_relations_household": true,
+            "remove_negative_relations_scope": ["roommate", "key"],
+            "harmony_extended_network": {"enabled": false},
+            "satisfaction_points": 5000,
+            "add_funds": 100000,
+            "max_funds": 1500000,
+            "fill_motives_mode": "all",
+            "freeze_motives": true,
+            "motives_to_fill": {
+                "human": ["motive_hunger", "motive_energy", "motive_hygiene", "motive_fun"]
+            },
+            "remove_all_dislikes": true,
+            "exclude_all": [
+                "trait_Unflirty", 
+                "trait_Jealous", 
+                "trait_Evil", 
+                "trait_Mean", 
+                "trait_Squeamish"
+            ],
+            "traits_all": [
+                "trait_GreatKisser", 
+                "trait_Carefree", 
+                "trait_Shameless",
+                "trait_MTS_Deaderpool_McCommander_NoAgeFlag",
+                "trait_MTS_Deaderpool_McCommander_ImmortalFlag",
+                "trait_MTS_Deaderpool_McCommander_NoOffspringFlag",
+                "Deaderpool_MCCC_Trait_FlagNoJealousy",
+                "Deaderpool_MCCC_Trait_FlagNoAgeFlag",
+                "TURBODRIVER:WickedWhims_Trait_STD_BladderBurn_Resistant",
+                "TURBODRIVER:WickedWhims_Trait_BodyHair_STD_NoCrabs",
+                "TURBODRIVER:WickedWhims_Trait_Sex_AlwaysAccept",
+                "TURBODRIVER:WickedWhims_Trait_Sex_SexuallyAlluring",
+                "TURBODRIVER:WickedWhims_Trait_Nudity_NoSweat_Reward",
+                "TURBODRIVER:WickedWhims_Trait_Relationships_Poly"
+            ],
+            "traits_sex_female": [
+                "TURBODRIVER:WickedWhims_Trait_Improved_Absorbency"
+            ],
+            "traits_occult": {},
+            "remove_unlisted_perks": false,
+            "perks_exclude_all": [],
+            "perks_exclude_occult": {},
+            "perks_all": [],
+            "perks_occult": {},
+            "spells_all": [],
+            "spells_occult": {}
+        },
         "4": {
             "name": "Dark Occult (Boese)",
             "luck": {"value": -50},
@@ -536,7 +686,7 @@ DEFAULT_CONFIG_STR = """{
     "auto_profiles": {
         "option_1": {
             "adult_playable_male": "0", "adult_playable_female": "0", 
-            "adult_npc_male": "1", "adult_npc_female": "3",
+            "adult_npc_male": "2", "adult_npc_female": "3",
             "child_playable": "10", "child_npc": "11"
         },
         "option_2": {
@@ -546,12 +696,12 @@ DEFAULT_CONFIG_STR = """{
         },
         "option_3": {
             "adult_playable_male": "0", "adult_playable_female": "0", 
-            "adult_npc_male": "1", "adult_npc_female": "1",
+            "adult_npc_male": "2", "adult_npc_female": "1",
             "child_playable": "10", "child_npc": "11"
         },
         "option_4": {
             "adult_playable_male": "0", "adult_playable_female": "0", 
-            "adult_npc_male": "5", "adult_npc_female": "5",
+            "adult_npc_male": "2", "adult_npc_female": "5",
             "child_playable": "10", "child_npc": "11"
         }
     },
@@ -568,6 +718,13 @@ DEFAULT_CONFIG_STR = """{
     }
 }"""
 
+def _update_dict_recursively(d, u):
+    for k, v in u.items():
+        if isinstance(v, dict) and k in d and isinstance(d[k], dict):
+            _update_dict_recursively(d[k], v)
+        else:
+            d[k] = v
+
 def load_config():
     global _config_data
     try:
@@ -575,21 +732,35 @@ def load_config():
             f.write(DEFAULT_CONFIG_STR)
     except: pass
 
+    default_data = json.loads(DEFAULT_CONFIG_STR)
+
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-                _config_data = json.load(f)
+                user_data = json.load(f)
+            
+            _update_dict_recursively(default_data, user_data)
+            _config_data = default_data
+            
+            try:
+                with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(_config_data, f, indent=4)
+            except: pass
             return
         except Exception:
-            _config_data = json.loads(DEFAULT_CONFIG_STR)
+            try:
+                import shutil
+                shutil.copy(CONFIG_FILE, CONFIG_FILE + ".corrupted")
+            except: pass
+            _config_data = default_data
             return
             
     try:
-        _config_data = json.loads(DEFAULT_CONFIG_STR)
+        _config_data = default_data
         with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
             f.write(DEFAULT_CONFIG_STR)
     except Exception:
-        _config_data = json.loads(DEFAULT_CONFIG_STR)
+        _config_data = default_data
 
 def get(key, default=None):
     global _config_data

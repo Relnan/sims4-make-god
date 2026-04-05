@@ -7,7 +7,7 @@ _log_cleared_this_session = False
 
 def init_logger():
     global _log_cleared_this_session
-    mode = mg_config.get("log_mode", "append")
+    mode = mg_config.get("log_mode", "overwrite")
     
     if mode == "overwrite" and not _log_cleared_this_session:
         try:
@@ -20,8 +20,14 @@ def init_logger():
 def log(message, is_debug=False, out=None, force_debug=False):
     init_logger()
     
-    debug_enabled = mg_config.get("debug_log", False) or force_debug
+    # Neues System: Auslesen des debug_level Strings statt des alten Booleans
+    current_level = mg_config.get("debug_level", "normal")
+    if isinstance(current_level, str):
+        current_level = current_level.lower().strip()
+        
+    debug_enabled = (current_level in ["normal", "all"]) or force_debug
     
+    # Wenn es eine reine Debug-Nachricht ist, aber das Level auf "none" steht, abbrechen
     if is_debug and not debug_enabled:
         return
 
@@ -36,7 +42,7 @@ def log(message, is_debug=False, out=None, force_debug=False):
     except:
         pass
         
-    # 2. Infos/Fehler immer im Spiel zeigen, Debug nur bei aktivem Debug-Modus
+    # 2. Ausgabe in die Ingame-Konsole (Info/Fehler immer, Debug nur wenn aktiv)
     if out and (debug_enabled or not is_debug):
         try:
             out(message)

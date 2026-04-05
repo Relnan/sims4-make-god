@@ -1,4 +1,3 @@
-# mg_main.py
 import sims4.commands
 import services
 import re
@@ -7,7 +6,10 @@ import mg_config
 import mg_logger
 import mg_utils
 import mg_queue
+import mg_dump
 
+# Erlaubt benutzerfreundliche Eingaben wie option1/option_1/opt1
+# und skaliert fuer beliebige Nummern (z.B. option_12).
 def _normalize_selector(value):
     raw = str(value).lower().strip()
     m = re.match(r'^(?:option_?|opt)(\d+)$', raw)
@@ -17,30 +19,37 @@ def _normalize_selector(value):
 
 def _parse_args_and_debug(args):
     args_list = [str(a).lower().strip() for a in args]
-    force_debug = False
+    force_debug_level = None
     
-    while args_list and args_list[-1] == 'debug':
-        force_debug = True
-        args_list.pop()
-        
-    return args_list, force_debug
+    while args_list and args_list[-1] in ['debug', 'debug_all']:
+        val = args_list.pop()
+        if val == 'debug' and not force_debug_level:
+            force_debug_level = 'normal'
+        elif val == 'debug_all':
+            force_debug_level = 'all'
+            
+    return args_list, force_debug_level
 
+# Initiales Laden beim Import
 mg_config.load_config()
 
+# --- HAUPT-ROUTING (Akzeptiert nun 'rmg' und 'make_god' als Befehl) ---
 @sims4.commands.Command('rmg', 'make_god', command_type=sims4.commands.CommandType.Live)
 def cmd_rmg_base(*args, _connection=None):
     out = sims4.commands.CheatOutput(_connection)
     try: sims4.commands.cheats_enabled = True
     except: pass
     
-    args_list, force_debug = _parse_args_and_debug(args)
+    args_list, force_debug_level = _parse_args_and_debug(args)
+    force_debug = force_debug_level is not None
+    
     mg_config.load_config()
     client = services.client_manager().get(_connection)
     if not client: return
     
     if not args_list:
         out("=== Relnans Make God (RMG) - Befehlsreferenz ===")
-        out("Nutzung: rmg [Modus] [Set_ID|auto] [override_occult] [debug]")
+        out("Nutzung: rmg [Modus] [Set_ID|auto] [override_occult] [debug|debug_all]")
         out(" ")
         out("Verfuegbare Shortcuts:")
         out("- rmg.all [Set_ID|auto] [override]     -> Auf den ganzen Haushalt.")
@@ -173,6 +182,7 @@ def cmd_rmg_base(*args, _connection=None):
                 return
                 
     else:
+        # Fallback
         for sim in active_household:
             targets_with_reason.append((sim, "Household"))
         set_id, override_occult = _extract_set_and_override(args_list)
@@ -194,10 +204,14 @@ def cmd_rmg_base(*args, _connection=None):
     if active_sim_info:
         for target_sim in targets:
             if target_sim.sim_id != active_sim_info.sim_id:
-                sims4.commands.execute(f"relationship.add_bit {active_sim_info.sim_id} {target_sim.sim_id} 15803", None)
+                try: sims4.commands.execute(f"relationship.add_bit {active_sim_info.sim_id} {target_sim.sim_id} 15803", None)
+                except: pass
 
     out(f"Sende {len(targets)} Sim(s) an die Queue fuer Set '{set_id}'...")
-    mg_queue.start_queue(targets, set_id, active_household, out, force_debug, override_occult, _connection)
+    
+    # ACHTUNG: Die Signatur von start_queue muss in Ihrer mg_queue.py 'override_occult' unterstuetzen!
+    # Bsp: def start_queue(targets, set_id_or_auto, active_household, out, force_debug_level, override_occult, _connection=None):
+    mg_queue.start_queue(targets, set_id, active_household, out, force_debug_level, override_occult, _connection)
 
 
 # --- BATCH SYSTEM (ERWEITERT MIT ARRAY/LISTEN TARGETING) ---
@@ -211,9 +225,10 @@ def cmd_rmg_bat(*args, _connection=None):
         out("Nutzung: rmg.bat <BatchName> [id \"<ID1, ID2>\" | name \"<Name1, Name2>\" | active] [Arg0] [Arg1] ...")
         return
         
-    args_list, force_debug = _parse_args_and_debug(args)
+    args_list, force_debug_level = _parse_args_and_debug(args)
+    force_debug = force_debug_level is not None
     original_args = list(args)
-    if force_debug and original_args[-1].lower().strip() == 'debug':
+    if force_debug and original_args[-1].lower().strip() in ['debug', 'debug_all']:
         original_args.pop()
 
     batch_name_str = args_list[0].lower()
@@ -341,7 +356,8 @@ def cmd_rmg_add(*args, _connection=None):
     try: sims4.commands.cheats_enabled = True
     except: pass
     
-    args_list, force_debug = _parse_args_and_debug(args)
+    args_list, force_debug_level = _parse_args_and_debug(args)
+    force_debug = force_debug_level is not None
     
     mg_config.load_config()
     client = services.client_manager().get(_connection)
@@ -424,8 +440,6 @@ def cmd_rmg_name(*args, _connection=None):
     cmd_rmg_base('name', *args, _connection=_connection)
 
 
-# mg_main.py
-
 # --- DIE UI-BRIDGE (MACRO RUNNER / PIE MENU) ---
 @sims4.commands.Command('make_god_ui_trigger', 'rmg.ui_trigger', command_type=sims4.commands.CommandType.Live)
 def cmd_rmg_ui_trigger(sim_id=None, action_id="01", _connection=None):
@@ -463,7 +477,7 @@ def cmd_rmg_ui_trigger(sim_id=None, action_id="01", _connection=None):
 
     # 3. Config-Schluessel zusammenbauen (z.B. "ui_playable_01" oder "ui_npc_01")
     raw_action = str(action_id).replace('"', '').strip()
-    action_suffix = raw_action.zfill(2) # Macht aus "1" automatisch "01"
+    action_suffix = raw_action.zfill(2)
     
     config_key = f"ui_playable_{action_suffix}" if is_playable else f"ui_npc_{action_suffix}"
     
@@ -480,12 +494,10 @@ def cmd_rmg_ui_trigger(sim_id=None, action_id="01", _connection=None):
     
     # 5. Befehle sequenziell ausfuehren
     for raw_cmd in macro_commands:
-        # Platzhalter mit echter Sim-ID ersetzen
         cmd_to_run = str(raw_cmd).replace("[sim_id]", str(parsed_id))
         
         mg_logger.log(f"   -> Execute: {cmd_to_run}", is_debug=True, out=out, force_debug=True)
         try:
-            # Die _connection wird nun zwingend an jeden EA-Cheat durchgereicht
             sims4.commands.execute(cmd_to_run, _connection)
         except Exception as e:
             mg_logger.log(f"      [FEHLER] bei Befehl '{cmd_to_run}': {e}", is_debug=False, out=out)
