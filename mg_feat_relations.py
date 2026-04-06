@@ -162,7 +162,8 @@ def apply_relations(sim_info, set_id, out, force_debug, group_targets=None, _con
         # --- 3. HAUSHALTSBEZIEHUNGEN FORCIEREN (Neues System) ---
         target_f = active_set.get("harmony_friendship", -999)
         target_r = active_set.get("harmony_romance", -999)
-        target_status = active_set.get("target_relationship_status", "")
+        target_status_raw = active_set.get("target_relationship_status", "")
+        target_statuses = target_status_raw if isinstance(target_status_raw, list) else [target_status_raw]
 
         for target_sim in targets:
             if target_sim.sim_id == sim_info.sim_id: continue 
@@ -182,7 +183,7 @@ def apply_relations(sim_info, set_id, out, force_debug, group_targets=None, _con
                         is_family = True; break
                         
             is_teen_adult_conflict = False
-            if not allow_teen_adult and target_status in ['woohoo_partner', 'significant_other', 'engaged', 'married']:
+            if not allow_teen_adult and any(ts in ['woohoo_partner', 'significant_other', 'engaged', 'married'] for ts in target_statuses):
                 age_self = getattr(sim_info, 'age', 0)
                 age_target = getattr(target_sim, 'age', 0)
                 if (age_self < 8 and age_target >= 8) or (age_self >= 8 and age_target < 8):
@@ -205,21 +206,23 @@ def apply_relations(sim_info, set_id, out, force_debug, group_targets=None, _con
                         except: pass
                     
             # --- Status-Bits setzen (Konflikte entfernen) ---
-            if target_status and not is_family and not is_teen_adult_conflict:
-                status_def = status_defs.get(target_status)
-                if status_def:
-                    remove_conflicts = status_def.get("remove_conflicts", [])
-                    add_bits = status_def.get("add_bits", [])
-                    
-                    for bit in current_bits:
-                        if getattr(bit, '__name__', '') in remove_conflicts:
-                            try: tracker.remove_bit(target_sim.sim_id, bit)
+            if not is_family and not is_teen_adult_conflict:
+                for target_status in target_statuses:
+                    if not target_status: continue
+                    status_def = status_defs.get(target_status)
+                    if status_def:
+                        remove_conflicts = status_def.get("remove_conflicts", [])
+                        add_bits = status_def.get("add_bits", [])
+                        
+                        for bit in tuple(tracker.get_all_bits(target_sim.sim_id)):
+                            if getattr(bit, '__name__', '') in remove_conflicts:
+                                try: tracker.remove_bit(target_sim.sim_id, bit)
+                                except: pass
+                                
+                        for bit_name in add_bits:
+                            try: sims4.commands.execute(f"relationship.add_bit {sim_info.sim_id} {target_sim.sim_id} {bit_name}", None)
                             except: pass
-                            
-                    for bit_name in add_bits:
-                        try: sims4.commands.execute(f"relationship.add_bit {sim_info.sim_id} {target_sim.sim_id} {bit_name}", None)
-                        except: pass
-                    target_modified = True
+                        target_modified = True
             
             if target_modified: modified_count += 1
 

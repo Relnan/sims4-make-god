@@ -415,6 +415,20 @@ def execute_reference_dump(out):
             spells.sort()
             f.write("\n".join(spells) + "\n\n")
 
+            # RELATIONSHIP BITS
+            if hasattr(sims4.resources.Types, 'RELATIONSHIP_BIT'):
+                rel_bit_manager = services.get_instance_manager(sims4.resources.Types.RELATIONSHIP_BIT)
+                if rel_bit_manager:
+                    f.write("## 💖 Alle Relationship Bits (Beziehungs-Bits)\n")
+                    bit_names = []
+                    for bit_type in rel_bit_manager.types.values():
+                        name = getattr(bit_type, '__name__', '')
+                        if name:
+                            bit_names.append(f"- `[REL_BIT]` {name}")
+                    bit_names.sort()
+                    if bit_names:
+                        f.write("\n".join(bit_names) + "\n\n")
+
         mg_logger.log(f"Reference-Dump erfolgreich: {filepath}", is_debug=True, out=out)
         out(f"Reference Dump abgeschlossen! Master-Datei liegt im Mod-Ordner.")
     except Exception as e:
