@@ -194,9 +194,7 @@ DEFAULT_CONFIG_STR = """{
             "traits_all": "Traits immer hinzufuegen. Am sichersten mit exaktem internen Namen.",
             "remove_unlisted_perks": "true/false. Sperrt (lock_perk) alle Perks, die der Sim hat, aber nicht in perks_occult aufgelistet sind.",
             "perks_exclude_all": "Perks, die explizit gesperrt werden sollen.",
-            "perks_occult": "Perks aufgeschluesselt nach Okkult-Typ (z.B. 'vampire', 'spellcaster').",
-            "spells_all": "Zaubersprueche und Traenke immer hinzufuegen.",
-            "spells_occult": "Zaubersprueche aufgeschluesselt nach Okkult-Typ."
+            "perks_occult": "Perks aufgeschluesselt nach Okkult-Typ (z.B. 'vampire', 'spellcaster')."
         },
         
         "0": {
@@ -354,15 +352,6 @@ DEFAULT_CONFIG_STR = """{
                     "ghostPowersPerks_GhostlyMovement", "ghostPowersPerks_ImproveLife", "ghostPowersPerks_InstantMaintenance", "ghostPowersPerks_InstantMaintenance_2", "ghostPowersPerks_InstantMaintenance_3", 
                     "ghostPowersPerks_NurtureLife", "ghostPowersPerks_PositivePresence", "ghostPowersPerks_SaveALife", "ghostPowersPerks_StrongerStamina", "ghostPowersPerks_WarmEmbrace"
                 ]
-            },
-            "spells_all": [],
-            "spells_occult": {
-                "spellcaster": [
-                    "spells_Practical_1_Clean", "spells_Practical_1_Repair", "spells_Practical_2_Food", "spells_Practical_2_Garden", "spells_Practical_3_Duplicate", "spells_Practical_3_Teleport", "spells_Practical_4_GrowPlant", "spells_Practical_4_Transport", "spells_Practical_5_ConvertToWitch",
-                    "spells_Mischief_1_Confuse", "spells_Mischief_1_Sadness", "spells_Mischief_2_Fight", "spells_Mischief_2_Love", "spells_Mischief_3_Steal", "spells_Mischief_4_Transform", "spells_Mischief_5_ChangeAppearance",
-                    "spells_Untamed_1_Fire", "spells_Untamed_2_Lightning", "spells_Untamed_2_SummonGhost", "spells_Untamed_3_Freeze", "spells_Untamed_3_MindControl", "spells_Untamed_4_RemoveCurse", "spells_Untamed_4_Resurrect", "spells_Untamed_5_CloneSelf",
-                    "recipe_Drink_Cauldron_Potion_BFF", "recipe_Drink_Cauldron_Potion_DeathProof", "recipe_Drink_Cauldron_Potion_FeelGood", "recipe_Drink_Cauldron_Potion_Hate", "recipe_Drink_Cauldron_Potion_Immortality", "recipe_Drink_Cauldron_Potion_LifeExtension", "recipe_Drink_Cauldron_Potion_Love", "recipe_Drink_Cauldron_Potion_Luck", "recipe_Drink_Cauldron_Potion_MakeGlowy", "recipe_Drink_Cauldron_Potion_Nullify", "recipe_Drink_Cauldron_Potion_Pheromone", "recipe_Drink_Cauldron_Potion_Poison", "recipe_Drink_Cauldron_Potion_RemoveCurses", "recipe_Drink_Cauldron_Potion_ResetWitchPerks", "recipe_Drink_Cauldron_Potion_SkillIncrease"
-                ]
             }
         },
         
@@ -400,9 +389,7 @@ DEFAULT_CONFIG_STR = """{
             "perks_exclude_all": [],
             "perks_exclude_occult": {},
             "perks_all": [],
-            "perks_occult": {},
-            "spells_all": [],
-            "spells_occult": {}
+            "perks_occult": {}
         },
 
         "2": {
@@ -439,9 +426,7 @@ DEFAULT_CONFIG_STR = """{
             "perks_exclude_all": [],
             "perks_exclude_occult": {},
             "perks_all": [],
-            "perks_occult": {},
-            "spells_all": [],
-            "spells_occult": {}
+            "perks_occult": {}
         },
         "3": {
             "name": "Perfect Woohoo NPC (Female)",
@@ -499,9 +484,7 @@ DEFAULT_CONFIG_STR = """{
             "perks_exclude_all": [],
             "perks_exclude_occult": {},
             "perks_all": [],
-            "perks_occult": {},
-            "spells_all": [],
-            "spells_occult": {}
+            "perks_occult": {}
         },
         "4": {
             "name": "Dark Occult (Boese)",
@@ -542,10 +525,6 @@ DEFAULT_CONFIG_STR = """{
                 "vampire": ["vampirePerks_MindPowers_EmotionalBurst_Level1", "vampirePerks_MindPowers_EmotionalBurst_Level2", "vampirePerks_MindPowers_EmotionalBurst_Level3", "vampirePerks_MindPowers_Hallucinate", "vampirePerks_MindPowers_IrresistibleSlumber", "vampirePerks_SpiritPowers_ManipulateLifeSpirit"],
                 "fairy": ["fairyPerks_PlayWithLuck_1", "fairyPerks_PlayWithLuck_2", "fairyPerks_PlayWithTheirMood", "fairyPerks_ProjectMyMood", "fairyPerks_InfluenceRelationship_1", "fairyPerks_InfluenceRelationship_2", "fairyPerks_InfluenceSentiment_1", "fairyPerks_InfluenceSentiment_2"],
                 "ghost": ["ghostPowersPerks_FearTheNight", "ghostPowersPerks_RemoveMaterial", "ghostPowersPerks_GhostlyMovement", "ghostPowersPerks_SpookyWoohoo"]
-            },
-            "spells_all": [],
-            "spells_occult": {
-                "spellcaster": ["spells_Untamed_1_Fire", "spells_Untamed_2_Lightning", "spells_Untamed_3_Freeze", "spells_Untamed_3_MindControl", "spells_Mischief_3_Steal", "spells_Mischief_4_Transform", "spells_Mischief_5_ChangeAppearance", "recipe_Drink_Cauldron_Potion_Hate", "recipe_Drink_Cauldron_Potion_Poison"]
             }
         },
 
@@ -589,10 +568,6 @@ DEFAULT_CONFIG_STR = """{
                 "werewolf": ["werewolfPerks_ImmortalWolf", "werewolfPerks_LunarResistance", "werewolfPerks_NaturalHealing", "werewolfPerks_WolfNap", "werewolfPerks_TheWillToResist"],
                 "fairy": ["fairyPerks_BloomPlant", "fairyPerks_CureAilment", "fairyPerks_FairyInsight", "fairyPerks_PlantGrowth", "fairyPerks_ResistSpilloverBuffs"],
                 "ghost": ["ghostPowersPerks_ImproveLife", "ghostPowersPerks_InstantMaintenance", "ghostPowersPerks_InstantMaintenance_2", "ghostPowersPerks_InstantMaintenance_3", "ghostPowersPerks_NurtureLife", "ghostPowersPerks_PositivePresence", "ghostPowersPerks_SaveALife"]
-            },
-            "spells_all": [],
-            "spells_occult": {
-                "spellcaster": ["spells_Practical_1_Clean", "spells_Practical_1_Repair", "spells_Practical_2_Food", "spells_Practical_4_GrowPlant", "recipe_Drink_Cauldron_Potion_FeelGood", "recipe_Drink_Cauldron_Potion_RemoveCurses"]
             }
         },
 
@@ -638,11 +613,9 @@ DEFAULT_CONFIG_STR = """{
             "perks_exclude_all": [],
             "perks_exclude_occult": {},
             "perks_all": [],
-            "perks_occult": {},
-            "spells_all": [],
-            "spells_occult": {}
+            "perks_occult": {}
         },
-        
+
         "11": {
             "name": "NPC Child (Normal)",
             "luck": {"value": 0},
@@ -677,9 +650,7 @@ DEFAULT_CONFIG_STR = """{
             "perks_exclude_all": [],
             "perks_exclude_occult": {},
             "perks_all": [],
-            "perks_occult": {},
-            "spells_all": [],
-            "spells_occult": {}
+            "perks_occult": {}
         }
     },
 

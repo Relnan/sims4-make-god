@@ -1,5 +1,6 @@
 import os
 import re
+import json
 from datetime import datetime
 import sims4.commands
 import sims4.resources
@@ -306,6 +307,16 @@ def export_debug_comparison(sim_info, timestamp, before_str, after_str):
             f.write("--- AFTER ---\n")
             f.write(after_str + "\n")
             f.write("=========================================\n")
+    except: pass
+
+def export_config_to_run_log(timestamp):
+    """Schreibt die komplette Konfiguration in die Run-Logdatei."""
+    filename = os.path.join(mg_config.MOD_FOLDER, f"make_god_run_{timestamp}.txt")
+    try:
+        with open(filename, 'a', encoding='utf-8') as f:
+            f.write("\n=== MAKEGOD RUN CONFIGURATION ===\n")
+            f.write(json.dumps(mg_config._config_data, indent=4))
+            f.write("\n=========================================\n")
     except: pass
 
 

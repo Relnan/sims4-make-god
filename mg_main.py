@@ -188,10 +188,14 @@ def cmd_rmg_base(*args, _connection=None):
         set_id, override_occult = _extract_set_and_override(args_list)
 
     targets = []
+    target_reason_map = {}
     if targets_with_reason:
         if force_debug: out("--- Liste der erfassten Sims ---")
         for sim, reason in targets_with_reason:
             targets.append(sim)
+            sim_id = getattr(sim, 'sim_id', None)
+            if sim_id is not None and sim_id not in target_reason_map:
+                target_reason_map[sim_id] = reason
             if force_debug:
                 first = getattr(sim, 'first_name', '')
                 last = getattr(sim, 'last_name', '')
@@ -209,9 +213,8 @@ def cmd_rmg_base(*args, _connection=None):
 
     out(f"Sende {len(targets)} Sim(s) an die Queue fuer Set '{set_id}'...")
     
-    # ACHTUNG: Die Signatur von start_queue muss in Ihrer mg_queue.py 'override_occult' unterstuetzen!
-    # Bsp: def start_queue(targets, set_id_or_auto, active_household, out, force_debug_level, override_occult, _connection=None):
-    mg_queue.start_queue(targets, set_id, active_household, out, force_debug_level, override_occult, _connection)
+    # Debug-Zusatzinfos (z.B. Household / Roommate / Keyholder) an die Queue weiterreichen
+    mg_queue.start_queue(targets, set_id, active_household, out, force_debug_level, override_occult, _connection, target_reason_map)
 
 
 # --- BATCH SYSTEM (ERWEITERT MIT ARRAY/LISTEN TARGETING) ---

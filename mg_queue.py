@@ -15,7 +15,7 @@ import mg_feat_wealth
 _is_queue_running = False
 _current_queue_state = None
 
-def start_queue(targets, set_id_or_auto, active_household, out, force_debug_level, override_occult=None, _connection=None):
+def start_queue(targets, set_id_or_auto, active_household, out, force_debug_level, override_occult=None, _connection=None, target_reason_map=None):
     global _is_queue_running, _current_queue_state
     
     # 1. Early Validation: Ist der Occult-Override gueltig? (Fail Fast)
@@ -82,11 +82,25 @@ def start_queue(targets, set_id_or_auto, active_household, out, force_debug_leve
                     actual_set_id = mg_utils.get_auto_set(sim_info, active_household, raw_id)
                 elif raw_id == 'auto':
                     actual_set_id = mg_utils.get_auto_set(sim_info, active_household, 'option_1')
+
+                force_debug = (state['debug_level'] in ['normal', 'all'])
+
+                first_name = getattr(sim_info, 'first_name', 'Unbekannt')
+                last_name = getattr(sim_info, 'last_name', '')
+                reason = "Unbekannt"
+                sim_id = getattr(sim_info, 'sim_id', None)
+                if target_reason_map and sim_id in target_reason_map:
+                    reason = target_reason_map.get(sim_id, reason)
+
+                mg_logger.log(
+                    f"[Queue] Bearbeite Sim: {first_name} {last_name} | Grund: {reason} | Set: {actual_set_id}",
+                    is_debug=True,
+                    out=out,
+                    force_debug=force_debug
+                )
                     
                 if state['debug_level'] == 'all':
                     state['before_dumps'][sim_info.sim_id] = mg_dump.export_ai_debug_dump(sim_info)
-                    
-                force_debug = (state['debug_level'] in ['normal', 'all'])
                 
                 # Parameter override_occult und _connection werden hier durchgereicht
                 mg_feat_traits.apply_traits(sim_info, actual_set_id, out, force_debug, override_occult, _connection)

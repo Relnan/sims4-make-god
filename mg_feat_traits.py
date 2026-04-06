@@ -97,16 +97,7 @@ def apply_traits(sim_info, set_id, out, force_debug, override_occult=None, _conn
     
     strict_perk_mode = active_set.get("remove_unlisted_perks", False)
 
-    spells_to_add = list(active_set.get("spells_all", []))
-    spells_occult = active_set.get("spells_occult", {})
-    for occ in occult_types:
-        if occ in spells_occult:
-            spells_to_add.extend(spells_occult[occ])
-    spells_to_add = _unique_names(spells_to_add)
-
     perk_manager = services.get_instance_manager(sims4.resources.Types.BUCKS_PERK) if hasattr(sims4.resources.Types, 'BUCKS_PERK') else None
-    recipe_manager = services.get_instance_manager(sims4.resources.Types.RECIPE) if hasattr(sims4.resources.Types, 'RECIPE') else None
-    snippet_manager = services.get_instance_manager(sims4.resources.Types.SNIPPET) if hasattr(sims4.resources.Types, 'SNIPPET') else None
 
     def find_inst(manager, name):
         if not manager: return None
@@ -147,35 +138,5 @@ def apply_traits(sim_info, set_id, out, force_debug, override_occult=None, _conn
                     bucks_tracker.unlock_perk(p_inst)
                     added_perks_count += 1
                 except: pass
-
-    # --- SPELLS & POTIONS HINZUFUEGEN (DYNAMIC REFLECTION) ---
-    if spells_to_add:
-        potential_trackers = []
-        for attr_name in dir(sim_info):
-            if 'tracker' in attr_name.lower() or 'magic' in attr_name.lower():
-                t_obj = getattr(sim_info, attr_name, None)
-                if t_obj: potential_trackers.append(t_obj)
-                
-        if hasattr(sim_info, 'get_unlock_tracker'):
-            try: potential_trackers.append(sim_info.get_unlock_tracker())
-            except: pass
-
-        for s_name in spells_to_add:
-            s_inst = find_inst(recipe_manager, s_name) or find_inst(snippet_manager, s_name)
-            if s_inst:
-                for tracker in potential_trackers:
-                    added = False
-                    try:
-                        if hasattr(tracker, 'add_unlock'):
-                            tracker.add_unlock(s_inst, None)
-                            added = True
-                        elif hasattr(tracker, 'unlock_spell'):
-                            tracker.unlock_spell(s_inst)
-                            added = True
-                        elif hasattr(tracker, 'add_spell'):
-                            tracker.add_spell(s_inst)
-                            added = True
-                    except: pass
-                    if added: break
 
     mg_logger.log(f"   [Traits/Perks] Abgeschlossen fuer {first_name} ({len(traits_to_add)} Traits, {added_perks_count} Perks, {removed_perks_count} entfernt).", is_debug=True, out=None, force_debug=force_debug)
