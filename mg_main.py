@@ -102,25 +102,48 @@ def cmd_rmg_base(*args, _connection=None):
         
         inc_roommates = mg_config.get("include_roommates_in_all", False)
         inc_keyholders = mg_config.get("include_keyholders_in_all", False)
+        inc_woohoo = mg_config.get("include_woohoo_partners_in_all", False)
+        inc_best_friends = mg_config.get("include_best_friends_in_all", False)
+        inc_significant_others = mg_config.get("include_significant_others_in_all", False)
+        inc_engaged = mg_config.get("include_engaged_in_all", False)
+        inc_married = mg_config.get("include_married_in_all", False)
         
-        if (inc_roommates or inc_keyholders) and active_sim_info:
+        any_inc = any([inc_roommates, inc_keyholders, inc_woohoo, inc_best_friends, inc_significant_others, inc_engaged, inc_married])
+        
+        if any_inc and active_sim_info:
             tracker = getattr(active_sim_info, 'relationship_tracker', None)
             if tracker:
                 target_ids_in_household = [t[0].sim_id for t in targets_with_reason]
                 for target_id in tuple(tracker.target_sim_gen()):
                     if target_id not in target_ids_in_household:
-                        has_roommate = False
-                        has_key = False
+                        has = {
+                            "roommate": False,
+                            "key": False,
+                            "woohoo": False,
+                            "best_friend": False,
+                            "significant_other": False,
+                            "engaged": False,
+                            "married": False
+                        }
+                        
                         for bit in tuple(tracker.get_all_bits(target_id)):
                             b_name = getattr(bit, '__name__', '').lower()
-                            if 'roommate' in b_name: has_roommate = True
-                            if 'key' in b_name: has_key = True
+                            if 'roommate' in b_name: has["roommate"] = True
+                            if 'key' in b_name: has["key"] = True
+                            if 'woohoo' in b_name: has["woohoo"] = True
+                            if 'bestfriends' in b_name or '-bff' in b_name or 'best_friends' in b_name: has["best_friend"] = True
+                            if 'significantother' in b_name: has["significant_other"] = True
+                            if 'engaged' in b_name: has["engaged"] = True
+                            if 'married' in b_name: has["married"] = True
                         
                         reason = None
-                        if inc_roommates and has_roommate:
-                            reason = "Roommate"
-                        elif inc_keyholders and has_key:
-                            reason = "Keyholder"
+                        if inc_roommates and has["roommate"]: reason = "Roommate"
+                        elif inc_keyholders and has["key"]: reason = "Keyholder"
+                        elif inc_woohoo and has["woohoo"]: reason = "Woohoo Partner"
+                        elif inc_best_friends and has["best_friend"]: reason = "Best Friend"
+                        elif inc_significant_others and has["significant_other"]: reason = "Significant Other"
+                        elif inc_engaged and has["engaged"]: reason = "Engaged"
+                        elif inc_married and has["married"]: reason = "Married"
                             
                         if reason:
                             target_sim = mg_utils.get_sim_by_id(target_id)

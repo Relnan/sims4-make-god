@@ -20,6 +20,11 @@ DEFAULT_CONFIG_STR = """{
     "log_mode": "overwrite",
     "include_roommates_in_all": true,
     "include_keyholders_in_all": true,
+    "include_woohoo_partners_in_all": true,
+    "include_best_friends_in_all": true,
+    "include_significant_others_in_all": true,
+    "include_engaged_in_all": true,
+    "include_married_in_all": true,
 
     "buffs_exclude_from_clear": [
         "buff_WitchOccult_MyPowerGrows",
