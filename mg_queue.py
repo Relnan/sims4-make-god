@@ -153,3 +153,25 @@ def start_queue(targets, set_id_or_auto, active_household, out, force_debug_leve
     _current_queue_state = state
     
     process_chunk(None)
+
+def cancel_queue(out=None):
+    global _is_queue_running, _current_queue_state
+    
+    if not _is_queue_running:
+        if out:
+            mg_logger.log("[Queue] Es laeuft keine Warteschlange, die beendet werden koennte.", is_debug=False, out=out)
+        return False
+        
+    try:
+        if _current_queue_state and _current_queue_state.get('alarm_handle'):
+            alarms.cancel_alarm(_current_queue_state['alarm_handle'])
+    except Exception as e:
+        if out:
+            mg_logger.log(f"[FEHLER] Beim Abbrechen des Alarms: {e}", is_debug=False, out=out)
+            
+    _is_queue_running = False
+    _current_queue_state = None
+    
+    if out:
+        mg_logger.log("[Queue] Warteschlange (Queue) wurde erfolgreich abgebrochen.", is_debug=False, out=out)
+    return True

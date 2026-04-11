@@ -695,6 +695,11 @@ DEFAULT_CONFIG_STR = """{
 }"""
 
 def _update_dict_recursively(d, u):
+    """
+    Kopiert rekursiv alle neuen oder abweichenden Werte aus dem User-Dictionary 'u' 
+    in das Default-Dictionary 'd'. So bleiben neue Parameter in der Ziel-Config 
+    erhalten, auch wenn der User eine veraltete JSON-Datei hat.
+    """
     for k, v in u.items():
         if isinstance(v, dict) and k in d and isinstance(d[k], dict):
             _update_dict_recursively(d[k], v)
@@ -723,7 +728,11 @@ def load_config():
                     json.dump(_config_data, f, indent=4)
             except: pass
             return
-        except Exception:
+        except Exception as e:
+            try:
+                import mg_logger
+                mg_logger.log(f"[WARNUNG] Config-Datei war korrupt (Fehler: {e}). Sie wird zurueckgesetzt und als .corrupted gesichert.", is_debug=False)
+            except: pass
             try:
                 import shutil
                 shutil.copy(CONFIG_FILE, CONFIG_FILE + ".corrupted")

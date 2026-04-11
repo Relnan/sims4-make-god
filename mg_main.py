@@ -59,6 +59,7 @@ def cmd_rmg_base(*args, _connection=None):
         out("- rmg.id <ID> [Set_ID] [override]      -> Auf Sim mit der ID.")
         out("- rmg.name <Name> [Set_ID] [override]  -> Auf gefundenen Sim.")
         out("- rmg.bat <BatchName> [Target]         -> Fuehrt Liste aus config.json aus.")
+        out("- rmg.stop                             -> Bricht aktuelle Make God Queue ab.")
         out("- rmg.dump                             -> Erstellt einen Textdatei-Dump (aktiver Sim).")
         out("- rmg.dump all                         -> Erstellt einen Dump fuer den ganzen Haushalt.")
         out("==================================================")
@@ -252,9 +253,15 @@ def cmd_rmg_bat(*args, _connection=None):
         return
         
     args_list, force_debug_level = _parse_args_and_debug(args)
+    if not args_list:
+        out("[FEHLER] Parameter-Liste ist leer (Fehlender BatchName).")
+        return
+        
     force_debug = force_debug_level is not None
+    
+    # Sicherstellen, dass original_args nicht ueber den Index hinaus modifiziert werden
     original_args = list(args)
-    if force_debug and original_args[-1].lower().strip() in ['debug', 'debug_all']:
+    if force_debug and original_args and original_args[-1].lower().strip() in ['debug', 'debug_all']:
         original_args.pop()
 
     batch_name_str = args_list[0].lower()
@@ -464,6 +471,13 @@ def cmd_rmg_id(*args, _connection=None):
 @sims4.commands.Command('rmg.name', command_type=sims4.commands.CommandType.Live)
 def cmd_rmg_name(*args, _connection=None):
     cmd_rmg_base('name', *args, _connection=_connection)
+
+@sims4.commands.Command('rmg.stop', 'rmg.cancel', command_type=sims4.commands.CommandType.Live)
+def cmd_rmg_stop(*args, _connection=None):
+    out = sims4.commands.CheatOutput(_connection)
+    try: sims4.commands.cheats_enabled = True
+    except: pass
+    mg_queue.cancel_queue(out)
 
 
 # --- DIE UI-BRIDGE (MACRO RUNNER / PIE MENU) ---
